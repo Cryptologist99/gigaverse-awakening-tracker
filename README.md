@@ -24,9 +24,9 @@ confirmed by watching the game's own network traffic.
    and set it to **"Read and write permissions"**. This is required so the
    workflow can commit new snapshot data back into the repo.
 4. Done. The workflow now runs automatically on the schedule in `track.yml`
-   (default: every hour, 5 minutes past the hour). You can also trigger a
-   run any time from the **Actions** tab → "Track Gigaverse Awakening" →
-   **Run workflow**.
+   (twice a day: 1:59 PM and 1:59 AM US Eastern, DST-adjusted). You can also
+   trigger a run any time from the **Actions** tab → "Track Gigaverse
+   Awakening" → **Run workflow**.
 
 Every run appends new rows to:
 - `data/pot_history.csv` — one row per run: timestamp, prize pot in USD
@@ -37,12 +37,20 @@ Both files just keep growing, so over time you build a full time series.
 
 ## Adjusting the schedule
 
-Edit the `cron` line in `.github/workflows/track.yml`. Cron is in UTC.
+Edit the `cron` lines in `.github/workflows/track.yml`. Cron is in UTC and
+does **not** follow daylight saving.
+
+The default runs **twice a day at 1:59 PM and 1:59 AM US Eastern**, year-round.
+Because GitHub cron is UTC-only, this is done by scheduling the UTC times for
+both EDT and EST offsets, and a small `gate` job only lets the run proceed when
+it's actually the intended hour in `America/New_York` (off-schedule DST
+duplicates are skipped). If you don't care about DST precision, you can replace
+all four cron lines with a single UTC line and delete the `gate` job.
 
 | Cadence | Cron |
 |---|---|
 | Every 15 min | `*/15 * * * *` |
-| Every hour (default) | `5 * * * *` |
+| Every hour | `5 * * * *` |
 | Every 6 hours | `0 */6 * * *` |
 | Once a day at 09:00 UTC | `0 9 * * *` |
 
