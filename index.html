@@ -67,7 +67,8 @@
   .eyebrow { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
   .eyebrow::before { content:""; width:22px; height:1px; background:var(--gold); display:inline-block; }
   h1 { font-family:"Bricolage Grotesque","Instrument Sans",sans-serif; font-weight:800; font-size:clamp(2rem,5vw,3.1rem); line-height:1.02; letter-spacing:-.02em; margin:0 0 12px; text-wrap:balance; }
-  .lede { color:var(--ink-soft); max-width:62ch; margin:0; font-size:1.02rem; }
+  .lede { color:var(--ink-soft); max-width:66ch; margin:0; font-size:1.02rem; }
+  .lede .disclaimer { display:inline-block; margin-top:8px; font-weight:700; letter-spacing:.05em; color:var(--gold); }
 
   .grid { display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:20px; align-items:start; }
   @media (max-width:820px) { .grid { grid-template-columns:1fr; } }
@@ -151,7 +152,7 @@
   <header class="masthead">
     <p class="eyebrow">Gigaverse · The Awakening</p>
     <h1>Hard Core Payout Calculator</h1>
-    <p class="lede">Estimate what your Hard Cores are worth. HC convert into fixed-cost boxes that pay cash from the prize pot; the pot splits across every box opened. The pool is computed from the live leaderboard, so the box cost sets how much HC is wasted and how many boxes truly exist.</p>
+    <p class="lede">Estimate what your Hard Cores are worth. HC will be converted into Gacha Boxes at the end of the event, which will contain prize money and cosmetic items. There will be a minimum cost, so not all users will be able to claim and not all HC will be used. This calculator simplifies by only accounting for one box size with an even distribution, which will not be the case, but hopefully is a decent ballpark. <strong class="disclaimer">NAPKIN MATH. NOT FINANCIAL ADVICE. DYOR.</strong></p>
   </header>
 
   <div class="grid">
@@ -224,17 +225,17 @@
     </div>
   </div>
 
-  <section class="card card-pad daily" aria-label="Daily earnings estimate">
-    <h2 class="panel-title">Daily earnings estimate</h2>
-    <p class="panel-sub">Multiplies the <b>value per HC</b> from the calculator above (set by box cost, pot, and total&nbsp;HC) by the HC you enter — handy for "how much is a day of grinding worth?"</p>
+  <section class="card card-pad daily" aria-label="Earnings per Day/Run/Cast">
+    <h2 class="panel-title">Earnings per Day/Run/Cast</h2>
+    <p class="panel-sub">Multiplies the <b>value per HC</b> from the calculator above (set by box cost, pot, and total&nbsp;HC) by the HC you enter — what a day, run, or cast is worth.</p>
     <div class="daily-row">
       <div class="daily-in field" style="margin:0;">
-        <label for="dailyHC">Hard Cores per day <span class="unit">HC / day</span></label>
+        <label for="dailyHC">Hard Cores <span class="unit">HC</span></label>
         <div class="input-shell"><input type="text" id="dailyHC" inputmode="numeric" value="10,000" autocomplete="off" spellcheck="false"></div>
         <div class="helper">Enter any HC amount — the total is value&nbsp;per&nbsp;HC × this.</div>
       </div>
       <div class="daily-out">
-        <p class="hero-label">Estimated value / day</p>
+        <p class="hero-label">Estimated Value</p>
         <p class="payout" id="dailyValue">$0.00</p>
         <p class="payout-sub" id="dailyRate">at $0.000000 per HC</p>
       </div>
