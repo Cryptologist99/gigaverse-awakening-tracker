@@ -130,6 +130,9 @@
   .hc { font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--ink); }
   .hcd { font-family:"IBM Plex Mono",monospace; font-size:.8rem; }
   .hcd.up { color:var(--up); } .hcd.down { color:var(--down); } .hcd.same { color:var(--ink-faint); }
+  .thsub { font-weight:600; color:var(--ink-faint); opacity:.85; }
+  .growth .hcd { display:block; }
+  .avgd { display:block; font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-faint); margin-top:2px; }
   .empty { padding:26px 14px; text-align:center; color:var(--ink-faint); }
 
   footer { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
@@ -151,7 +154,6 @@
     <div class="source">
       <span class="dot" id="srcDot"></span>
       <span id="srcText">Loading…</span>
-      <button class="refresh" id="refreshBtn" title="Reload">Refresh</button>
     </div>
     <div class="countdown" id="countdown" hidden></div>
   </div>
@@ -159,7 +161,7 @@
   <header class="masthead">
     <p class="eyebrow">Gigaverse · The Awakening</p>
     <h1>Awakening Leaderboard</h1>
-    <p class="lede"><b>A daily snapshot, not a live board.</b> It updates once a day from the 1:59 PM ET snapshot, so each row shows a player's <b>Hard Core growth over the day</b> and how their rank moved — the useful view when plays per day are capped.</p>
+    <p class="lede">A daily snapshot taken at reset, not a live board.</p>
     <div class="snapbar" id="snapbar" hidden>
       <span class="tag" id="snapMode">daily</span>
       <span id="snapText"></span>
@@ -194,7 +196,7 @@
             <th>Move</th>
             <th>Player</th>
             <th class="num">Hard Cores</th>
-            <th class="num">Δ HC / day</th>
+            <th class="num">Δ since snap<br><span class="thsub">avg / day</span></th>
           </tr>
         </thead>
         <tbody id="tbody"><tr><td class="empty" colspan="5">Loading leaderboard…</td></tr></tbody>
@@ -244,11 +246,14 @@
     if (p.rankDelta < 0) return '<span class="mvcell down">▼ ' + (-p.rankDelta) + '</span>';
     return '<span class="mvcell same">–</span>';
   }
-  function hcDeltaCell(p) {
-    if (p.hcDelta == null) return '<span class="hcd same">—</span>';
-    if (p.hcDelta === 0) return '<span class="hcd same">0</span>';
-    var cls = p.hcDelta > 0 ? "up" : "down", sign = p.hcDelta > 0 ? "+" : "−";
-    return '<span class="hcd ' + cls + '">' + sign + commaInt(Math.abs(p.hcDelta)) + '</span>';
+  function growthCell(p) {
+    var snap;
+    if (p.hcDelta == null) snap = '<span class="hcd same">—</span>';
+    else if (p.hcDelta === 0) snap = '<span class="hcd same">0</span>';
+    else snap = '<span class="hcd ' + (p.hcDelta > 0 ? "up" : "down") + '">' + (p.hcDelta > 0 ? "+" : "−") + commaInt(Math.abs(p.hcDelta)) + '</span>';
+    var avg = (p.avgPerDay == null) ? '<span class="avgd">—</span>'
+      : '<span class="avgd">avg ' + (p.avgPerDay >= 0 ? "+" : "−") + commaInt(Math.abs(p.avgPerDay)) + '/day</span>';
+    return snap + avg;
   }
 
   function render() {
@@ -267,7 +272,7 @@
         + '<td>' + moveCell(p) + '</td>'
         + '<td>' + (p.name ? '<span class="uname">' + esc(p.name) + '</span>' : '<span class="anon">anon</span>') + '</td>'
         + '<td class="num hc">' + commaInt(p.hc) + '</td>'
-        + '<td class="num">' + hcDeltaCell(p) + '</td>'
+        + '<td class="num growth">' + growthCell(p) + '</td>'
         + '</tr>';
     }
     tb.innerHTML = html;
@@ -290,11 +295,11 @@
 
     if (prev) {
       var dPot = (cur.pot != null && prev.pot != null) ? cur.pot - prev.pot : null;
-      if (dPot != null) { el("tlPotD").className = "d " + (dPot > 0 ? "up" : dPot < 0 ? "down" : ""); el("tlPotD").textContent = (dPot >= 0 ? "+" : "−") + usd(Math.abs(dPot)).replace("$", "$") + " / day"; }
+      if (dPot != null) { el("tlPotD").className = "d " + (dPot > 0 ? "up" : dPot < 0 ? "down" : ""); el("tlPotD").textContent = (dPot >= 0 ? "+" : "−") + usd(Math.abs(dPot)) + " since snap"; }
       var dHC = (cur.totalHC || 0) - (prev.totalHC || 0);
-      el("tlHCD").className = "d " + (dHC > 0 ? "up" : dHC < 0 ? "down" : ""); el("tlHCD").textContent = signed(dHC) + " / day";
+      el("tlHCD").className = "d " + (dHC > 0 ? "up" : dHC < 0 ? "down" : ""); el("tlHCD").textContent = signed(dHC) + " since snap";
       var dH = (cur.holders || 0) - (prev.holders || 0);
-      el("tlHoldersD").className = "d " + (dH > 0 ? "up" : dH < 0 ? "down" : ""); el("tlHoldersD").textContent = signed(dH) + " / day";
+      el("tlHoldersD").className = "d " + (dH > 0 ? "up" : dH < 0 ? "down" : ""); el("tlHoldersD").textContent = signed(dH) + " since snap";
       el("mvSince").textContent = "vs " + fmtET(prev.ts);
     }
 
@@ -306,13 +311,12 @@
       : "Standings as of the <b>" + fmtET(cur.ts) + "</b> snapshot · daily growth vs <b>" + (prev ? fmtET(prev.ts) : "—") + "</b>.";
 
     el("srcDot").className = "dot";
-    el("srcText").innerHTML = "<b>Daily snapshot</b> · " + fmtET(cur.ts) + " · " + commaInt(STATE.players.length) + " players";
+    el("srcText").innerHTML = "Last snapshot <b>" + fmtET(cur.ts) + "</b>";
     el("footNote").textContent = "Daily snapshot (not live) · gigaverse.io leaderboard id 8 · generated " + fmtET(data.generatedAt) + ".";
     render();
   }
 
   function load() {
-    el("refreshBtn").disabled = true;
     el("srcText").innerHTML = "<b>Loading…</b>";
     return fetch(JSON_URL, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("json " + r.status); return r.json(); })
       .then(function (data) { apply(data); })
@@ -320,12 +324,10 @@
         el("srcDot").className = "dot err";
         el("srcText").innerHTML = "<b>Couldn't load the daily snapshot</b>";
         el("tbody").innerHTML = '<tr><td class="empty" colspan="5">The daily snapshot file isn\'t available yet. It\'s generated by the tracker\'s twice-daily job.</td></tr>';
-      })
-      .then(function () { el("refreshBtn").disabled = false; });
+      });
   }
 
   el("search").addEventListener("input", render);
-  el("refreshBtn").addEventListener("click", function () { showAll = false; load(); });
   startCountdown();
   load();
 })();
