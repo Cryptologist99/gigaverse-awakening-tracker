@@ -130,9 +130,7 @@
   .hc { font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--ink); }
   .hcd { font-family:"IBM Plex Mono",monospace; font-size:.8rem; }
   .hcd.up { color:var(--up); } .hcd.down { color:var(--down); } .hcd.same { color:var(--ink-faint); }
-  .thsub { font-weight:600; color:var(--ink-faint); opacity:.85; }
-  .growth .hcd { display:block; }
-  .avgd { display:block; font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-faint); margin-top:2px; }
+  .avgd { font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink-faint); }
   .empty { padding:26px 14px; text-align:center; color:var(--ink-faint); }
 
   footer { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
@@ -252,6 +250,12 @@
     if (v === 0) return '<span class="hcd same">0</span>';
     return '<span class="hcd ' + (v > 0 ? "up" : "down") + '">' + (v > 0 ? "+" : "−") + commaInt(Math.abs(v)) + '</span>';
   }
+  // Avg column: always muted grey (placeholder that mirrors the daily delta for now).
+  function avgCell(v) {
+    if (v == null) return '<span class="hcd same">—</span>';
+    if (v === 0) return '<span class="avgd">0</span>';
+    return '<span class="avgd">' + (v > 0 ? "+" : "−") + commaInt(Math.abs(v)) + '</span>';
+  }
 
   function render() {
     var q = el("search").value.trim().toLowerCase();
@@ -270,7 +274,7 @@
         + '<td>' + (p.name ? '<span class="uname">' + esc(p.name) + '</span>' : '<span class="anon">anon</span>') + '</td>'
         + '<td class="num hc">' + commaInt(p.hc) + '</td>'
         + '<td class="num">' + deltaCell(p.hcDelta) + '</td>'
-        + '<td class="num">' + deltaCell(p.avgPerDay) + '</td>'
+        + '<td class="num">' + avgCell(p.avgPerDay) + '</td>'
         + '</tr>';
     }
     tb.innerHTML = html;
