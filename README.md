@@ -40,12 +40,14 @@ Both files just keep growing, so over time you build a full time series.
 Edit the `cron` lines in `.github/workflows/track.yml`. Cron is in UTC and
 does **not** follow daylight saving.
 
-The default runs **twice a day at 1:59 PM and 1:59 AM US Eastern**, year-round.
-Because GitHub cron is UTC-only, this is done by scheduling the UTC times for
-both EDT and EST offsets, and a small `gate` job only lets the run proceed when
-it's actually the intended hour in `America/New_York` (off-schedule DST
-duplicates are skipped). If you don't care about DST precision, you can replace
-all four cron lines with a single UTC line and delete the `gate` job.
+The default runs **twice a day at 1:59 AM and 1:59 PM US Eastern** via fixed UTC
+crons (`59 5` and `59 17`). The Awakening event runs entirely within US Daylight
+Time (EDT), so those UTC times land exactly on 1:59 Eastern for the whole event.
+There is deliberately **no DST gate**: GitHub often delays scheduled runs (by
+minutes, sometimes hours), and a gate that checked the wall-clock hour at run
+time would skip a delayed run entirely. Running unconditionally means a late run
+still records its snapshot. (If you extend this past the Nov 2 DST change and
+want to hold 1:59 Eastern exactly, shift the PM/AM crons to `59 18` / `59 6`.)
 
 | Cadence | Cron |
 |---|---|

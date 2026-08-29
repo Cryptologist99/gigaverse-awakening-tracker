@@ -2,46 +2,21 @@ name: Track Gigaverse Awakening
 
 on:
   schedule:
-    # Cron is UTC and does NOT follow daylight saving, so we list the UTC
-    # times for BOTH offsets of each target, then the "gate" job below only
-    # lets the run proceed when it's actually 13:59 or 01:59 in New York.
-    # Net effect: exactly two runs/day at 1:59 PM and 1:59 AM Eastern, year-round.
-    - cron: "59 17 * * *"   # 1:59 PM Eastern while EDT (UTC-4)
-    - cron: "59 18 * * *"   # 1:59 PM Eastern while EST (UTC-5)
-    - cron: "59 5 * * *"    # 1:59 AM Eastern while EDT (UTC-4)
-    - cron: "59 6 * * *"    # 1:59 AM Eastern while EST (UTC-5)
+    # Cron is UTC. The Awakening event (Aug 10 – Oct 9 2026) runs entirely
+    # within US Daylight Time (EDT = UTC-4; DST doesn't end until Nov 2), so
+    # these fixed UTC times ARE 1:59 AM / 1:59 PM US Eastern for the whole event.
+    # No DST gate: GitHub often delays scheduled runs (sometimes by hours), and
+    # a gate that checks the clock at run time would skip a delayed run entirely.
+    # Running unconditionally means a late run still records its snapshot.
+    - cron: "59 5 * * *"    # 1:59 AM Eastern (EDT)
+    - cron: "59 17 * * *"   # 1:59 PM Eastern (EDT)
   workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
 
 permissions:
   contents: write
 
 jobs:
-  # Only proceed at the intended Eastern local times. A manual run always proceeds.
-  gate:
-    runs-on: ubuntu-latest
-    outputs:
-      run: ${{ steps.check.outputs.run }}
-    steps:
-      - id: check
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual dispatch — proceeding."
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          HOUR=$(TZ=America/New_York date +%H)
-          echo "Current Eastern time: $(TZ=America/New_York date +'%Y-%m-%d %H:%M %Z')"
-          if [ "$HOUR" = "13" ] || [ "$HOUR" = "01" ]; then
-            echo "Eastern hour $HOUR is a scheduled snapshot time — proceeding."
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Eastern hour $HOUR is off-schedule (DST duplicate) — skipping."
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
-
   snapshot:
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
