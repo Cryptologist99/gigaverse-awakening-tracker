@@ -70,6 +70,30 @@ lb = pd.read_csv("data/leaderboard_history.csv", parse_dates=["timestamp_utc"])
 lb[lb["username"] == "cryptologist"].plot(x="timestamp_utc", y="rank")
 ```
 
+## Analysis: HC value model
+
+`analysis/hc_value_model.py` estimates what each Hard Core (HC) is worth as a
+share of the prize pot, assuming HC convert into fixed-cost boxes that pay out
+cash and the pot is split in proportion to boxes opened. It reads the latest
+snapshot from `data/` (or any past one via `--timestamp`).
+
+```bash
+python analysis/hc_value_model.py                     # latest snapshot, Model B, 500 HC box
+python analysis/hc_value_model.py --box-cost 1000     # different box cost
+python analysis/hc_value_model.py --model A           # proportional (every eligible HC counts)
+python analysis/hc_value_model.py --sweep 250 500 1000 2500   # box-cost sensitivity table
+python analysis/hc_value_model.py --examples 500 10000 100000 # payouts for specific HC amounts
+```
+
+- **Model B (default)** — whole boxes only: `spent = floor(HC / box_cost) * box_cost`;
+  HC below the next whole box is wasted. Value per HC = `pot / sum(spent)`.
+- **Model A** — proportional: every eligible HC counts. Value per HC = `pot / sum(eligible HC)`.
+- Players below one box cost are gated out. Lower box cost → more players and HC
+  included → the pot is split over more HC → lower value per HC.
+
+Results are a point-in-time estimate; the pot and HC pool both move as the event
+runs, so re-run against newer snapshots (or `--timestamp`) to see the trend.
+
 ## Notes
 
 - `LEADERBOARD_ID = 8` in `track_awakening.py` is specific to *The
