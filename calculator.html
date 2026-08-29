@@ -510,7 +510,21 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   }
 
   // ---- wiring -------------------------------------------------------
+  // group digits with commas while typing an integer field, preserving the caret
+  function liveComma(input) {
+    var start = input.selectionStart;
+    var digitsBefore = input.value.slice(0, start).replace(/[^0-9]/g, "").length;
+    var digits = input.value.replace(/[^0-9]/g, "");
+    var formatted = digits ? parseInt(digits, 10).toLocaleString("en-US") : "";
+    if (formatted === input.value) return;
+    input.value = formatted;
+    var pos = 0, seen = 0;
+    while (pos < formatted.length && seen < digitsBefore) { var cc = formatted.charCodeAt(pos); if (cc >= 48 && cc <= 57) seen++; pos++; }
+    try { input.setSelectionRange(pos, pos); } catch (e) {}
+  }
+
   Object.keys(f).forEach(function (k) { f[k].addEventListener("input", function () { touched[k] = true; calc(); }); });
+  f.yourHC.addEventListener("input", function () { liveComma(f.yourHC); });
   f.boxCost.addEventListener("blur", function () { if (f.boxCost.value.trim()) f.boxCost.value = commaInt(parseNum(f.boxCost.value)); });
   f.yourHC.addEventListener("blur", function () { if (f.yourHC.value.trim()) f.yourHC.value = commaInt(parseNum(f.yourHC.value)); });
   f.totalHC.addEventListener("blur", function () { if (f.totalHC.value.trim()) f.totalHC.value = commaInt(parseNum(f.totalHC.value)); });
@@ -521,6 +535,7 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   el("projJackpot").addEventListener("click", function () { var pr = computeProjection(); if (!pr.valid) return; f.jackpot.value = fmtUsd(pr.finalPot); touched.jackpot = true; calc(); });
   el("projTotal").addEventListener("click", function () { var pr = computeProjection(); if (!pr.valid) return; f.totalHC.value = fmtInt(pr.finalHC); touched.totalHC = true; calc(); });
   el("refreshBtn").addEventListener("click", function () { loadLive(); });
+  el("dailyHC").addEventListener("input", function () { liveComma(el("dailyHC")); });
   el("dailyHC").addEventListener("input", updateDaily);
   el("dailyHC").addEventListener("blur", function () { if (el("dailyHC").value.trim()) el("dailyHC").value = commaInt(parseNum(el("dailyHC").value)); });
 
