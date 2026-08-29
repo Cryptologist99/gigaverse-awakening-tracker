@@ -72,6 +72,9 @@
 
   .grid { display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:20px; align-items:start; }
   @media (max-width:820px) { .grid { grid-template-columns:1fr; } }
+  .col-left { display:flex; flex-direction:column; gap:14px; }
+  .col-note { margin:0; padding:0 4px; font-size:.82rem; line-height:1.5; color:var(--ink-faint); }
+  .col-note::before { content:"⚠ "; color:var(--gold); }
   .card { background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
   .card-pad { padding:clamp(18px,3vw,26px); }
   .panel-title { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1.05rem; margin:0 0 2px; letter-spacing:-.01em; }
@@ -156,6 +159,7 @@
   </header>
 
   <div class="grid">
+    <div class="col-left">
     <section class="card card-pad" aria-label="Your assumptions">
       <h2 class="panel-title">Your assumptions</h2>
       <p class="panel-sub">Live figures fill in on load — override any of them.</p>
@@ -181,6 +185,8 @@
         <div class="helper"><button type="button" class="chip" id="useTotal">Use current</button><button type="button" class="chip" id="projTotal" title="Linear projection to event end (Oct 9 18:00 UTC), assuming total HC started at 0 on Aug 10 18:00 UTC and grows at the same daily rate.">Projected final</button></div>
       </div>
     </section>
+      <p class="col-note">Projections are simple linear projections based on accumulation over time since the beginning of the event. Guaranteed to be wrong.</p>
+    </div>
 
     <div class="results">
       <div class="hero">
@@ -201,8 +207,6 @@
       <div class="stats">
         <div class="stat"><p class="k">Value per HC</p><p class="v" id="outVPHC">$0.00</p><p class="note" id="outVPHCpct">— per 1,000 HC</p></div>
         <div class="stat"><p class="k">Value per box</p><p class="v gold" id="outVPBox">$0.00</p><p class="note" id="outBoxNote">per box</p></div>
-        <div class="stat"><p class="k">Boxes you open</p><p class="v" id="outBoxes">0</p><p class="note" id="outSpent">0 HC spent</p></div>
-        <div class="stat"><p class="k">Your HC wasted</p><p class="v" id="outWasted">0</p><p class="note" id="outWastedNote">below a full box</p></div>
       </div>
 
       <section class="card card-pad" aria-label="The pool at this box cost">
@@ -308,10 +312,6 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
     el("outVPHCpct").textContent = "$" + (valuePerHC*1000).toFixed(2) + " per 1,000 HC";
     el("outVPBox").textContent = usdSmall(valuePerBox);
     el("outBoxNote").textContent = "per " + commaInt(box) + " HC box";
-    el("outBoxes").textContent = commaInt(yourBoxes);
-    el("outSpent").textContent = commaInt(yourSpent) + " HC spent";
-    el("outWasted").textContent = commaInt(yourWasted);
-    el("outWastedNote").textContent = "of your " + commaInt(yourHC) + " HC";
 
     var poolTotal = STATE.total * s;
     var wasted = Math.max(0, poolTotal - pool.spent);
