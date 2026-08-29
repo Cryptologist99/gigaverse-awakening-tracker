@@ -172,12 +172,12 @@
       <div class="field">
         <label for="jackpot">Prize pot <span class="unit">USD</span></label>
         <div class="input-shell"><span class="prefix">$</span><input type="text" id="jackpot" class="has-prefix" inputmode="decimal" value="0.00" autocomplete="off" spellcheck="false"></div>
-        <div class="helper"><button type="button" class="chip" id="useJackpot">Use current</button><span>enter a custom pot to project ahead.</span></div>
+        <div class="helper"><button type="button" class="chip" id="useJackpot">Use current</button><button type="button" class="chip" id="projJackpot" title="Linear projection to event end (Oct 9 18:00 UTC), assuming the pot started at $30,000 on Aug 10 18:00 UTC and grows at the same daily rate.">Projected final</button></div>
       </div>
       <div class="field">
         <label for="totalHC">Projected total HC <span class="unit">HC in play</span></label>
         <div class="input-shell"><input type="text" id="totalHC" inputmode="numeric" value="0" autocomplete="off" spellcheck="false"></div>
-        <div class="helper"><button type="button" class="chip" id="useTotal">Use current</button><span>scales the real leaderboard up or down.</span></div>
+        <div class="helper"><button type="button" class="chip" id="useTotal">Use current</button><button type="button" class="chip" id="projTotal" title="Linear projection to event end (Oct 9 18:00 UTC), assuming total HC started at 0 on Aug 10 18:00 UTC and grows at the same daily rate.">Projected final</button></div>
       </div>
     </section>
 
@@ -349,10 +349,33 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   function fmtInt(n) { return commaInt(n); }
   function fmtUsd(n) { return n.toLocaleString("en-US", { minimumFractionDigits:2, maximumFractionDigits:2 }); }
 
-  // reflect STATE into the "current" chips and (if untouched) the input defaults
+  // Linear projection to event end: pot from $30k (Aug 10 18:00 UTC), HC from 0.
+  var EVENT_START = Date.UTC(2026, 7, 10, 18, 0, 0) / 1000;   // Aug 10 2026 18:00 UTC
+  var EVENT_END_FALLBACK = Date.UTC(2026, 9, 9, 18, 0, 0) / 1000; // Oct 9 2026 18:00 UTC (60-day event)
+  function computeProjection() {
+    var now = STATE.serverTimestamp || (Date.now() / 1000);
+    var end = (STATE.serverTimestamp && STATE.secondsTillEnd != null)
+      ? STATE.serverTimestamp + STATE.secondsTillEnd
+      : EVENT_END_FALLBACK;
+    var elapsed = now - EVENT_START, duration = end - EVENT_START;
+    if (elapsed <= 0 || duration <= 0) return { valid: false };
+    var frac = Math.min(1, elapsed / duration);       // share of the event elapsed
+    return { valid: true, frac: frac, finalPot: 30000 + (STATE.pot - 30000) / frac, finalHC: STATE.total / frac };
+  }
+
+  // reflect STATE into the "current" / "projected final" chips and (if untouched) the input defaults
   function applyStateToUI() {
     el("useJackpot").textContent = "Use current · $" + fmtUsd(STATE.pot);
     el("useTotal").textContent = "Use current · " + fmtInt(STATE.total);
+    var pr = computeProjection();
+    if (pr.valid) {
+      el("projJackpot").textContent = "Projected final · $" + fmtUsd(pr.finalPot);
+      el("projTotal").textContent = "Projected final · " + fmtInt(pr.finalHC);
+      el("projJackpot").disabled = false; el("projTotal").disabled = false;
+    } else {
+      el("projJackpot").textContent = "Projected final"; el("projTotal").textContent = "Projected final";
+      el("projJackpot").disabled = true; el("projTotal").disabled = true;
+    }
     if (!touched.jackpot) f.jackpot.value = fmtUsd(STATE.pot);
     if (!touched.totalHC) f.totalHC.value = fmtInt(STATE.total);
     calc();
@@ -395,6 +418,7 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
       var potUsd = potJson.prizePot.poolBalance / 100;
       var totalPages = (p1.pagination && p1.pagination.totalPages) || 1;
       var secs = p1.secondsTillEnd;
+      var srv = p1.serverTimestamp;
       var pages = [Promise.resolve(p1)];
       for (var pg = 2; pg <= totalPages; pg++) pages.push(fetch(API_LB + "?page=" + pg).then(function (r) { return r.ok ? r.json() : { leaderboard: [] }; }));
       return Promise.all(pages).then(function (all) {
@@ -405,7 +429,7 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
         }
         if (!dist.length) throw new Error("empty leaderboard");
         dist.sort(function (a, b) { return b - a; });
-        STATE = { dist: dist, pot: potUsd, total: sum(dist), source: "live", ts: new Date().toISOString(), secondsTillEnd: secs };
+        STATE = { dist: dist, pot: potUsd, total: sum(dist), source: "live", ts: new Date().toISOString(), secondsTillEnd: secs, serverTimestamp: srv };
         setSource("live", "<b>Live</b> · pot " + usd(potUsd) + " · " + commaInt(dist.length) + " holders · just now");
         el("footNote").textContent = "Live from gigaverse.io · leaderboard id 8 (Hard Cores) · " + commaInt(dist.length) + " holders.";
         startCountdown(secs);
@@ -474,6 +498,8 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
 
   el("useJackpot").addEventListener("click", function () { f.jackpot.value = fmtUsd(STATE.pot); touched.jackpot = false; calc(); });
   el("useTotal").addEventListener("click", function () { f.totalHC.value = fmtInt(STATE.total); touched.totalHC = false; calc(); });
+  el("projJackpot").addEventListener("click", function () { var pr = computeProjection(); if (!pr.valid) return; f.jackpot.value = fmtUsd(pr.finalPot); touched.jackpot = true; calc(); });
+  el("projTotal").addEventListener("click", function () { var pr = computeProjection(); if (!pr.valid) return; f.totalHC.value = fmtInt(pr.finalHC); touched.totalHC = true; calc(); });
   el("refreshBtn").addEventListener("click", function () { loadLive(); });
   el("dailyHC").addEventListener("input", updateDaily);
   el("dailyHC").addEventListener("blur", function () { if (el("dailyHC").value.trim()) el("dailyHC").value = commaInt(parseNum(el("dailyHC").value)); });
