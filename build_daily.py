@@ -69,37 +69,23 @@ def main():
         return {"ts": ts, "pot": pot.get(ts),
                 "totalHC": sum(int(x["hard_cores"]) for x in rs), "holders": len(rs)}
 
-    # first snapshot each wallet appears in, for a historical average/day rate
-    def epoch(ts):
-        return dt.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc).timestamp()
-    first_seen = {}
-    for ts in all_ts:
-        for r in rows_by_ts[ts]:
-            w = (r["wallet"] or "").lower()
-            if w and w not in first_seen:
-                first_seen[w] = (ts, int(r["hard_cores"]))
-    cur_epoch = epoch(cur)
-
     prev_map = wmap(prev) if prev else {}
     players = []
     for r in sorted(rows_by_ts[cur], key=lambda r: int(r["rank"])):
         w = (r["wallet"] or "").lower()
         p = prev_map.get(w)
         amt, rank = int(r["hard_cores"]), int(r["rank"])
-        avg = None
-        fs = first_seen.get(w)
-        if fs:
-            days = (cur_epoch - epoch(fs[0])) / 86400.0
-            if days > 0.02:                      # need meaningful elapsed time
-                avg = round((amt - fs[1]) / days)
+        delta = (amt - p["amount"]) if p else None            # since previous (daily) snapshot
         players.append({
             "rank": rank,
             "name": r["username"] or "",
             "hc": amt,
-            "hcDelta": (amt - p["amount"]) if p else None,   # since previous (daily) snapshot
+            "hcDelta": delta,
             "rankDelta": (p["rank"] - rank) if p else None,
             "isNew": p is None,
-            "avgPerDay": avg,                                 # avg HC/day over tracked history
+            # avgPerDay: placeholder — mirrors the since-snapshot delta for now. Once there
+            # is enough snapshot history, replace with a real per-day average.
+            "avgPerDay": delta,
         })
 
     out = {
