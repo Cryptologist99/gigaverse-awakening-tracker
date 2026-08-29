@@ -127,6 +127,12 @@
   .callout.show { display:flex; } .callout svg { flex:none; margin-top:1px; }
   .assumption { font-size:.82rem; color:var(--ink-soft); line-height:1.55; border-top:1px dashed var(--line-strong); padding-top:16px; margin:2px 0 0; } .assumption b { color:var(--ink); font-weight:600; }
   code { font-family:"IBM Plex Mono",monospace; font-size:.82em; background:var(--surface-2); border:1px solid var(--line); padding:1px 6px; border-radius:6px; }
+  .daily { margin-top:20px; }
+  .daily-row { display:flex; gap:24px; align-items:center; flex-wrap:wrap; }
+  .daily-in { flex:1 1 240px; }
+  .daily-out { flex:1 1 260px; }
+  .daily-out .payout { font-size:clamp(2.1rem,7vw,3.1rem); }
+  .panel-sub b { color:var(--ink-soft); font-weight:600; }
   footer { margin-top:26px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
   footer a { color:var(--gold); text-decoration:none; } footer a:hover { text-decoration:underline; }
 </style>
@@ -218,6 +224,23 @@
     </div>
   </div>
 
+  <section class="card card-pad daily" aria-label="Daily earnings estimate">
+    <h2 class="panel-title">Daily earnings estimate</h2>
+    <p class="panel-sub">Multiplies the <b>value per HC</b> from the calculator above (set by box cost, pot, and total&nbsp;HC) by the HC you enter — handy for "how much is a day of grinding worth?"</p>
+    <div class="daily-row">
+      <div class="daily-in field" style="margin:0;">
+        <label for="dailyHC">Hard Cores per day <span class="unit">HC / day</span></label>
+        <div class="input-shell"><input type="text" id="dailyHC" inputmode="numeric" value="10,000" autocomplete="off" spellcheck="false"></div>
+        <div class="helper">Enter any HC amount — the total is value&nbsp;per&nbsp;HC × this.</div>
+      </div>
+      <div class="daily-out">
+        <p class="hero-label">Estimated value / day</p>
+        <p class="payout" id="dailyValue">$0.00</p>
+        <p class="payout-sub" id="dailyRate">at $0.000000 per HC</p>
+      </div>
+    </div>
+  </section>
+
   <footer>
     <span id="footNote">Data source shown top-left · leaderboard id 8 (Hard Cores).</span>
     <span>An estimate, not financial advice.</span>
@@ -243,6 +266,7 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   var STATE = { dist: EMBED.dist.slice(), pot: EMBED.pot, total: sum(EMBED.dist), source: "embedded", ts: EMBED.ts, secondsTillEnd: null };
   var touched = { jackpot: false, totalHC: false, boxCost: false, yourHC: false };
   var endAt = null, countdownTimer = null;
+  var lastVPHC = 0; // value per HC from the main calculator, shared with the daily calc
 
   function sum(a) { for (var s = 0, i = 0; i < a.length; i++) s += a[i]; return s; }
   function parseNum(v) { var n = parseFloat(String(v).replace(/[^0-9.]/g, "")); return isFinite(n) ? n : 0; }
@@ -310,6 +334,16 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
     if (box <= 0) { warn.classList.add("show"); txt.textContent = "Enter a box cost above 0 to open any boxes."; }
     else if (yourHC < box) { warn.classList.add("show"); txt.textContent = "You need at least " + commaInt(box) + " HC to open a single box — with " + commaInt(yourHC) + " HC you're gated out and earn nothing."; }
     else warn.classList.remove("show");
+
+    lastVPHC = valuePerHC;
+    updateDaily();
+  }
+
+  // Daily earnings: value per HC (from the main calc) × HC entered here.
+  function updateDaily() {
+    var hc = Math.floor(parseNum(el("dailyHC").value));
+    el("dailyValue").textContent = usd(lastVPHC * hc);
+    el("dailyRate").textContent = "at " + usdSmall(lastVPHC) + " per HC";
   }
 
   function fmtInt(n) { return commaInt(n); }
@@ -441,6 +475,8 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   el("useJackpot").addEventListener("click", function () { f.jackpot.value = fmtUsd(STATE.pot); touched.jackpot = false; calc(); });
   el("useTotal").addEventListener("click", function () { f.totalHC.value = fmtInt(STATE.total); touched.totalHC = false; calc(); });
   el("refreshBtn").addEventListener("click", function () { loadLive(); });
+  el("dailyHC").addEventListener("input", updateDaily);
+  el("dailyHC").addEventListener("blur", function () { if (el("dailyHC").value.trim()) el("dailyHC").value = commaInt(parseNum(el("dailyHC").value)); });
 
   // seed with embedded snapshot immediately, then upgrade to live
   applyStateToUI();
