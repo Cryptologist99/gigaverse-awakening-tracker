@@ -37,17 +37,21 @@ Both files just keep growing, so over time you build a full time series.
 
 ## Adjusting the schedule
 
-Edit the `cron` lines in `.github/workflows/track.yml`. Cron is in UTC and
-does **not** follow daylight saving.
+**Scheduling runs on an always-on Raspberry Pi, not GitHub Actions.** GitHub's
+scheduler proved too imprecise (runs delayed by hours, and one was skipped
+entirely), so the exact-time schedule was moved to the Pi (`botbot`):
 
-The default runs **twice a day at 1:59 AM and 1:59 PM US Eastern** via fixed UTC
-crons (`59 5` and `59 17`). The Awakening event runs entirely within US Daylight
-Time (EDT), so those UTC times land exactly on 1:59 Eastern for the whole event.
-There is deliberately **no DST gate**: GitHub often delays scheduled runs (by
-minutes, sometimes hours), and a gate that checked the wall-clock hour at run
-time would skip a delayed run entirely. Running unconditionally means a late run
-still records its snapshot. (If you extend this past the Nov 2 DST change and
-want to hold 1:59 Eastern exactly, shift the PM/AM crons to `59 18` / `59 6`.)
+- `~/bin/gigaverse-snapshot.sh` on the Pi does `git pull` → `python3
+  track_awakening.py` → commit & push, logging to `~/gigaverse-snapshot.log`.
+- Cron fires it at **`59 1` and `59 13`** in the Pi's local timezone
+  (`America/New_York`), i.e. exactly **1:59 AM and 1:59 PM US Eastern**. Because
+  cron uses the system localtime, DST is handled automatically year-round.
+- The Pi authenticates to GitHub via its existing `gh` credential helper.
+
+The GitHub Actions workflow (`.github/workflows/track.yml`) is kept as a
+**manual trigger only** (`workflow_dispatch`) — no `schedule:` — so there are no
+duplicate, off-time runs. To take an ad-hoc snapshot you can still use the
+Actions tab → "Run workflow", or run the script on the Pi directly.
 
 | Cadence | Cron |
 |---|---|
