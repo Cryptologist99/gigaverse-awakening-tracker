@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Awakening Leaderboard</title>
-<meta name="description" content="Live Gigaverse Awakening leaderboard with rank movement, prize pot, and total Hard Cores.">
+<meta name="description" content="Daily Gigaverse Awakening leaderboard — each player's daily Hard Core growth and rank movement, plus daily pot growth.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap">
@@ -14,8 +14,7 @@
     --ink:#1B1A28; --ink-soft:#55536A; --ink-faint:#8A889E;
     --line:#DAD8E6; --line-strong:#C6C3D6;
     --gold:#A9741E; --gold-bg:#F3E7CE; --teal:#1E8E7E; --danger:#B4472F; --live:#1E8E7E;
-    --up:#1E8E7E; --down:#B4472F;
-    --focus:#7C69C9;
+    --up:#1E8E7E; --down:#B4472F; --focus:#7C69C9;
     --shadow:0 1px 2px rgba(27,26,40,.06),0 12px 32px -12px rgba(27,26,40,.18);
   }
   @media (prefers-color-scheme: dark) {
@@ -49,7 +48,6 @@
     background-attachment:fixed;
   }
 
-  /* nav (shared with calculator.html) */
   .topnav { position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
     padding:11px clamp(16px,4vw,48px); background:color-mix(in oklab,var(--surface) 85%,transparent); backdrop-filter:blur(10px);
     -webkit-backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
@@ -67,12 +65,8 @@
   .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
   .source { display:inline-flex; align-items:center; gap:9px; font-size:.82rem; color:var(--ink-soft);
     background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 8px 6px 13px; box-shadow:var(--shadow); }
-  .dot { width:8px; height:8px; border-radius:50%; background:var(--ink-faint); flex:none; }
-  .dot.live { background:var(--live); animation:pulse 2s infinite; }
-  .dot.snap { background:var(--gold); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--gold); flex:none; }
   .dot.err { background:var(--danger); }
-  @keyframes pulse { 0%{box-shadow:0 0 0 0 color-mix(in oklab,var(--live) 55%,transparent);} 70%{box-shadow:0 0 0 7px transparent;} 100%{box-shadow:0 0 0 0 transparent;} }
-  @media (prefers-reduced-motion: reduce) { .dot.live { animation:none; } }
   #srcText b { color:var(--ink); font-weight:600; }
   .refresh { font-family:"IBM Plex Mono",monospace; font-size:.76rem; background:var(--gold-bg); color:var(--gold);
     border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:3px 10px; border-radius:999px; cursor:pointer; font-weight:500; }
@@ -81,14 +75,21 @@
     background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 13px; box-shadow:var(--shadow); }
   .countdown b { color:var(--gold); }
 
-  header.masthead { margin-bottom:22px; }
+  header.masthead { margin-bottom:18px; }
   .eyebrow { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
   .eyebrow::before { content:""; width:22px; height:1px; background:var(--gold); display:inline-block; }
   h1 { font-family:"Bricolage Grotesque","Instrument Sans",sans-serif; font-weight:800; font-size:clamp(1.9rem,5vw,2.9rem); line-height:1.03; letter-spacing:-.02em; margin:0 0 10px; text-wrap:balance; }
-  .lede { color:var(--ink-soft); max-width:60ch; margin:0; font-size:1rem; }
+  .lede { color:var(--ink-soft); max-width:64ch; margin:0; font-size:1rem; }
+  .lede b { color:var(--ink); font-weight:600; }
 
-  /* topline */
-  .topline { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:22px 0; }
+  .snapbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:16px 0 0; font-size:.82rem; color:var(--ink-soft);
+    background:color-mix(in oklab,var(--gold) 8%,var(--surface)); border:1px solid color-mix(in oklab,var(--gold) 26%,var(--line));
+    border-radius:10px; padding:9px 13px; }
+  .snapbar .tag { font-family:"IBM Plex Mono",monospace; font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; font-weight:600;
+    color:var(--gold); background:var(--gold-bg); border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:2px 8px; border-radius:999px; }
+  .snapbar b { color:var(--ink); font-weight:600; }
+
+  .topline { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0 22px; }
   @media (max-width:680px) { .topline { grid-template-columns:repeat(2,1fr); } }
   .tl { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 17px; box-shadow:var(--shadow); }
   .tl .k { font-size:.74rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 7px; font-weight:600; }
@@ -97,7 +98,6 @@
   .tl .d { font-size:.76rem; margin:6px 0 0; font-variant-numeric:tabular-nums; color:var(--ink-faint); }
   .tl .d.up { color:var(--up); } .tl .d.down { color:var(--down); }
 
-  /* controls */
   .controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
   .search { flex:1 1 240px; position:relative; }
   .search input { width:100%; font-family:"Instrument Sans",sans-serif; font-size:.95rem; color:var(--ink);
@@ -109,7 +109,7 @@
   .mv.up { color:var(--up); } .mv.down { color:var(--down); } .mv.new { color:var(--gold); } .mv.same { color:var(--ink-faint); }
 
   .board-note { font-size:.8rem; color:var(--ink-faint); margin:0 0 8px; }
-  .board-note a, .linkish { color:var(--gold); cursor:pointer; text-decoration:none; font-weight:600; }
+  .linkish { color:var(--gold); cursor:pointer; text-decoration:none; font-weight:600; }
   .linkish:hover { text-decoration:underline; }
 
   .tablewrap { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
@@ -126,7 +126,7 @@
   .mvcell { font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:.85rem; }
   .mvcell.up { color:var(--up); } .mvcell.down { color:var(--down); } .mvcell.same { color:var(--ink-faint); } .mvcell.new { color:var(--gold); }
   .uname { font-weight:600; color:var(--ink); }
-  .wallet { font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink-faint); }
+  .anon { color:var(--ink-faint); font-weight:500; }
   .hc { font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--ink); }
   .hcd { font-family:"IBM Plex Mono",monospace; font-size:.8rem; }
   .hcd.up { color:var(--up); } .hcd.down { color:var(--down); } .hcd.same { color:var(--ink-faint); }
@@ -150,8 +150,8 @@
   <div class="topbar">
     <div class="source">
       <span class="dot" id="srcDot"></span>
-      <span id="srcText">Loading live data…</span>
-      <button class="refresh" id="refreshBtn" title="Reload live data">Refresh</button>
+      <span id="srcText">Loading…</span>
+      <button class="refresh" id="refreshBtn" title="Reload">Refresh</button>
     </div>
     <div class="countdown" id="countdown" hidden></div>
   </div>
@@ -159,20 +159,24 @@
   <header class="masthead">
     <p class="eyebrow">Gigaverse · The Awakening</p>
     <h1>Awakening Leaderboard</h1>
-    <p class="lede">Live Hard Cores standings, with movement since the last snapshot. Loaded from the game's public API; history comes from this tracker's twice-daily snapshots.</p>
+    <p class="lede"><b>A daily snapshot, not a live board.</b> It updates once a day from the 1:59 PM ET snapshot, so each row shows a player's <b>Hard Core growth over the day</b> and how their rank moved — the useful view when plays per day are capped.</p>
+    <div class="snapbar" id="snapbar" hidden>
+      <span class="tag" id="snapMode">daily</span>
+      <span id="snapText"></span>
+    </div>
   </header>
 
   <div class="topline">
     <div class="tl"><p class="k">Prize pot</p><p class="v gold" id="tlPot">—</p><p class="d" id="tlPotD"></p></div>
     <div class="tl"><p class="k">Total Hard Cores</p><p class="v" id="tlHC">—</p><p class="d" id="tlHCD"></p></div>
     <div class="tl"><p class="k">Holders</p><p class="v" id="tlHolders">—</p><p class="d" id="tlHoldersD"></p></div>
-    <div class="tl"><p class="k">Event ends in</p><p class="v" id="tlEnds">—</p><p class="d" id="tlEndsD">Oct 9, 18:00 UTC</p></div>
+    <div class="tl"><p class="k">Event ends in</p><p class="v" id="tlEnds">—</p><p class="d">Oct 9, 18:00 UTC</p></div>
   </div>
 
   <div class="controls">
     <div class="search">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="search" placeholder="Search player or wallet…" autocomplete="off" spellcheck="false">
+      <input type="text" id="search" placeholder="Search player…" autocomplete="off" spellcheck="false">
     </div>
     <div class="legend">
       <span class="mv up">▲ up</span><span class="mv down">▼ down</span><span class="mv new">● new</span>
@@ -189,18 +193,17 @@
             <th class="num">#</th>
             <th>Move</th>
             <th>Player</th>
-            <th>Wallet</th>
             <th class="num">Hard Cores</th>
-            <th class="num">Δ HC</th>
+            <th class="num">Δ HC / day</th>
           </tr>
         </thead>
-        <tbody id="tbody"><tr><td class="empty" colspan="6">Loading leaderboard…</td></tr></tbody>
+        <tbody id="tbody"><tr><td class="empty" colspan="5">Loading leaderboard…</td></tr></tbody>
       </table>
     </div>
   </div>
 
   <footer>
-    <span id="footNote">Public data from gigaverse.io · leaderboard id 8 (Hard Cores).</span>
+    <span id="footNote">Daily snapshot from this tracker's twice-daily job · gigaverse.io leaderboard id 8.</span>
     <span><a href="calculator.html">Estimate your payout →</a></span>
   </footer>
 </div>
@@ -208,28 +211,24 @@
 <script>
 (function () {
   "use strict";
-  var API_POT = "https://gigaverse.io/api/itempools/public";
-  var API_LB  = "https://gigaverse.io/api/leaderboard/id/8";
-  var CSV_LB  = "data/leaderboard_history.csv";
+  var JSON_URL = "data/leaderboard_daily.json";
+  var EVENT_END = Date.UTC(2026, 9, 9, 18, 0, 0) / 1000; // Oct 9 2026 18:00 UTC
   var DEFAULT_SHOW = 250;
 
   var el = function (id) { return document.getElementById(id); };
-  var STATE = { rows: [], prevTs: null };
+  var STATE = { players: [] };
   var showAll = false, countdownTimer = null;
 
   function commaInt(n) { return Math.round(n).toLocaleString("en-US"); }
-  function usd(n) { return n.toLocaleString("en-US", { style:"currency", currency:"USD", minimumFractionDigits:2, maximumFractionDigits:2 }); }
-  function shortWallet(w) { return w ? w.slice(0, 6) + "…" + w.slice(-4) : ""; }
+  function usd(n) { return n == null ? "—" : n.toLocaleString("en-US", { style:"currency", currency:"USD", minimumFractionDigits:2, maximumFractionDigits:2 }); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" })[c]; }); }
-  function fmtTime(iso) { var d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString(undefined, { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" }); }
+  function fmtET(iso) { var d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString(undefined, { timeZone:"America/New_York", month:"short", day:"numeric", hour:"numeric", minute:"2-digit" }) + " ET"; }
+  function signed(n) { return (n >= 0 ? "+" : "−") + commaInt(Math.abs(n)); }
 
-  function setSource(kind, html) { el("srcDot").className = "dot" + (kind ? " " + kind : ""); el("srcText").innerHTML = html; }
-
-  function startCountdown(endEpoch) {
+  function startCountdown() {
     if (countdownTimer) clearInterval(countdownTimer);
-    if (!endEpoch) { el("countdown").hidden = true; return; }
     var tick = function () {
-      var left = Math.max(0, Math.floor(endEpoch - Date.now() / 1000));
+      var left = Math.max(0, Math.floor(EVENT_END - Date.now() / 1000));
       var d = Math.floor(left/86400), h = Math.floor((left%86400)/3600), m = Math.floor((left%3600)/60);
       el("countdown").hidden = false;
       el("countdown").innerHTML = left > 0 ? "Event ends in <b>" + d + "d " + h + "h " + m + "m</b>" : "<b>Event ended</b>";
@@ -238,65 +237,37 @@
     tick(); countdownTimer = setInterval(tick, 30000);
   }
 
-  // most recent snapshot in the history CSV -> {ts, map: wallet->{rank,amount}}
-  function parseHistory(text) {
-    var lines = text.replace(/\r/g, "").split("\n");
-    if (lines.length < 2) return null;
-    var maxTs = "";
-    for (var i = 1; i < lines.length; i++) { if (!lines[i]) continue; var c = lines[i].indexOf(","); if (c < 0) continue; var ts = lines[i].slice(0, c); if (ts > maxTs) maxTs = ts; }
-    if (!maxTs) return null;
-    var map = {};
-    for (var j = 1; j < lines.length; j++) {
-      var ln = lines[j]; if (!ln || ln.lastIndexOf(maxTs, 0) !== 0) continue;
-      var parts = ln.split(",");
-      var wallet = parts[2];
-      if (wallet) map[wallet.toLowerCase()] = { rank: parseInt(parts[1], 10), amount: parseInt(parts[parts.length - 1], 10) };
-    }
-    return { ts: maxTs, map: map };
-  }
-
-  function computeRows(live, hist) {
-    var prev = hist ? hist.map : {};
-    return live.map(function (e) {
-      var w = (e.wallet || "").toLowerCase();
-      var p = prev[w];
-      return { rank: e.rank, wallet: e.wallet, username: e.username, amount: e.amount,
-               isNew: !p, rankDelta: p ? (p.rank - e.rank) : null, hcDelta: p ? (e.amount - p.amount) : null,
-               hay: ((e.username || "") + " " + (e.wallet || "")).toLowerCase() };
-    });
-  }
-
-  function moveCell(r) {
-    if (r.isNew) return '<span class="mvcell new">● NEW</span>';
-    if (r.rankDelta == null) return '<span class="mvcell same">–</span>';
-    if (r.rankDelta > 0) return '<span class="mvcell up">▲ ' + r.rankDelta + '</span>';
-    if (r.rankDelta < 0) return '<span class="mvcell down">▼ ' + (-r.rankDelta) + '</span>';
+  function moveCell(p) {
+    if (p.isNew) return '<span class="mvcell new">● NEW</span>';
+    if (p.rankDelta == null) return '<span class="mvcell same">–</span>';
+    if (p.rankDelta > 0) return '<span class="mvcell up">▲ ' + p.rankDelta + '</span>';
+    if (p.rankDelta < 0) return '<span class="mvcell down">▼ ' + (-p.rankDelta) + '</span>';
     return '<span class="mvcell same">–</span>';
   }
-  function hcDeltaCell(r) {
-    if (r.hcDelta == null || r.hcDelta === 0) return '<span class="hcd same">—</span>';
-    var cls = r.hcDelta > 0 ? "up" : "down", sign = r.hcDelta > 0 ? "+" : "−";
-    return '<span class="hcd ' + cls + '">' + sign + commaInt(Math.abs(r.hcDelta)) + '</span>';
+  function hcDeltaCell(p) {
+    if (p.hcDelta == null) return '<span class="hcd same">—</span>';
+    if (p.hcDelta === 0) return '<span class="hcd same">0</span>';
+    var cls = p.hcDelta > 0 ? "up" : "down", sign = p.hcDelta > 0 ? "+" : "−";
+    return '<span class="hcd ' + cls + '">' + sign + commaInt(Math.abs(p.hcDelta)) + '</span>';
   }
 
   function render() {
     var q = el("search").value.trim().toLowerCase();
-    var rows = STATE.rows;
-    var filtered = q ? rows.filter(function (r) { return r.hay.indexOf(q) !== -1; }) : rows;
+    var rows = STATE.players;
+    var filtered = q ? rows.filter(function (p) { return (p.name || "").toLowerCase().indexOf(q) !== -1; }) : rows;
     var limit = (q || showAll) ? filtered.length : Math.min(DEFAULT_SHOW, filtered.length);
     var shown = filtered.slice(0, limit);
     var tb = el("tbody");
-    if (!shown.length) { tb.innerHTML = '<tr><td class="empty" colspan="6">No players match “' + esc(q) + '”.</td></tr>'; el("boardNote").innerHTML = ""; return; }
+    if (!shown.length) { tb.innerHTML = '<tr><td class="empty" colspan="5">No players match “' + esc(q) + '”.</td></tr>'; el("boardNote").innerHTML = ""; return; }
     var html = "";
     for (var i = 0; i < shown.length; i++) {
-      var r = shown[i];
+      var p = shown[i];
       html += '<tr>'
-        + '<td class="num rank">' + r.rank + '</td>'
-        + '<td>' + moveCell(r) + '</td>'
-        + '<td class="uname">' + (esc(r.username) || '<span class="wallet">anon</span>') + '</td>'
-        + '<td class="wallet">' + esc(shortWallet(r.wallet)) + '</td>'
-        + '<td class="num hc">' + commaInt(r.amount) + '</td>'
-        + '<td class="num">' + hcDeltaCell(r) + '</td>'
+        + '<td class="num rank">' + p.rank + '</td>'
+        + '<td>' + moveCell(p) + '</td>'
+        + '<td>' + (p.name ? '<span class="uname">' + esc(p.name) + '</span>' : '<span class="anon">anon</span>') + '</td>'
+        + '<td class="num hc">' + commaInt(p.hc) + '</td>'
+        + '<td class="num">' + hcDeltaCell(p) + '</td>'
         + '</tr>';
     }
     tb.innerHTML = html;
@@ -309,81 +280,54 @@
     }
   }
 
-  function setTopline(pot, totalHC, holders, hist) {
-    el("tlPot").textContent = pot ? usd(pot) : "—";
-    el("tlHC").textContent = commaInt(totalHC);
-    el("tlHolders").textContent = commaInt(holders);
-    if (hist) {
-      var prevHC = 0, prevHolders = 0, w;
-      for (w in hist.map) { prevHC += hist.map[w].amount; prevHolders++; }
-      var dHC = totalHC - prevHC, dH = holders - prevHolders;
-      el("tlHCD").className = "d " + (dHC > 0 ? "up" : dHC < 0 ? "down" : "");
-      el("tlHCD").textContent = (dHC >= 0 ? "+" : "−") + commaInt(Math.abs(dHC)) + " since snap";
-      el("tlHoldersD").className = "d " + (dH > 0 ? "up" : dH < 0 ? "down" : "");
-      el("tlHoldersD").textContent = (dH >= 0 ? "+" : "−") + commaInt(Math.abs(dH)) + " since snap";
-      el("mvSince").textContent = "since " + fmtTime(hist.ts);
+  function apply(data) {
+    STATE.players = data.players || [];
+    var cur = data.current || {}, prev = data.previous || null;
+
+    el("tlPot").textContent = usd(cur.pot);
+    el("tlHC").textContent = commaInt(cur.totalHC || 0);
+    el("tlHolders").textContent = commaInt(cur.holders || 0);
+
+    if (prev) {
+      var dPot = (cur.pot != null && prev.pot != null) ? cur.pot - prev.pot : null;
+      if (dPot != null) { el("tlPotD").className = "d " + (dPot > 0 ? "up" : dPot < 0 ? "down" : ""); el("tlPotD").textContent = (dPot >= 0 ? "+" : "−") + usd(Math.abs(dPot)).replace("$", "$") + " / day"; }
+      var dHC = (cur.totalHC || 0) - (prev.totalHC || 0);
+      el("tlHCD").className = "d " + (dHC > 0 ? "up" : dHC < 0 ? "down" : ""); el("tlHCD").textContent = signed(dHC) + " / day";
+      var dH = (cur.holders || 0) - (prev.holders || 0);
+      el("tlHoldersD").className = "d " + (dH > 0 ? "up" : dH < 0 ? "down" : ""); el("tlHoldersD").textContent = signed(dH) + " / day";
+      el("mvSince").textContent = "vs " + fmtET(prev.ts);
     }
+
+    var provisional = data.mode !== "daily";
+    el("snapbar").hidden = false;
+    el("snapMode").textContent = provisional ? "provisional" : "daily";
+    el("snapText").innerHTML = provisional
+      ? "Aligning to the 1:59 PM ET daily snapshot. For now, standings are <b>" + fmtET(cur.ts) + "</b> vs the earliest snapshot <b>" + (prev ? fmtET(prev.ts) : "—") + "</b>. Clean daily growth begins once two 1:59 PM snapshots exist."
+      : "Standings as of the <b>" + fmtET(cur.ts) + "</b> snapshot · daily growth vs <b>" + (prev ? fmtET(prev.ts) : "—") + "</b>.";
+
+    el("srcDot").className = "dot";
+    el("srcText").innerHTML = "<b>Daily snapshot</b> · " + fmtET(cur.ts) + " · " + commaInt(STATE.players.length) + " players";
+    el("footNote").textContent = "Daily snapshot (not live) · gigaverse.io leaderboard id 8 · generated " + fmtET(data.generatedAt) + ".";
+    render();
   }
 
-  function fetchJson(u) { return fetch(u).then(function (r) { if (!r.ok) throw new Error(u + " " + r.status); return r.json(); }); }
-
-  function loadLive() {
-    setSource("", "<b>Loading live data…</b>"); el("refreshBtn").disabled = true;
-    var histP = fetch(CSV_LB).then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) { return t ? parseHistory(t) : null; }).catch(function () { return null; });
-    return Promise.all([fetchJson(API_POT), fetchJson(API_LB + "?page=1"), histP]).then(function (res) {
-      var pot = res[0].prizePot.poolBalance / 100, p1 = res[1], hist = res[2];
-      var totalPages = (p1.pagination && p1.pagination.totalPages) || 1;
-      var secs = p1.secondsTillEnd, srv = p1.serverTimestamp;
-      var pages = [Promise.resolve(p1)];
-      for (var pg = 2; pg <= totalPages; pg++) pages.push(fetchJson(API_LB + "?page=" + pg).catch(function () { return { leaderboard: [] }; }));
-      return Promise.all(pages).then(function (all) {
-        var live = [];
-        all.forEach(function (pj) { (pj.leaderboard || []).forEach(function (e) { live.push({ rank: e.rank, wallet: e.wallet, username: e.username, amount: +e.amount }); }); });
-        if (!live.length) throw new Error("empty leaderboard");
-        live.sort(function (a, b) { return a.rank - b.rank; });
-        var totalHC = live.reduce(function (s, e) { return s + (e.amount || 0); }, 0);
-        STATE.rows = computeRows(live, hist);
-        setTopline(pot, totalHC, live.length, hist);
-        startCountdown(srv && secs != null ? srv + secs : null);
-        setSource("live", "<b>Live</b> · " + commaInt(live.length) + " players · just now");
-        el("footNote").innerHTML = "Public data from gigaverse.io · leaderboard id 8 · movement vs snapshot " + (hist ? fmtTime(hist.ts) : "(none yet)") + ".";
-        render();
-      });
-    }).catch(function (e) { return loadSnapshotOnly(e); }).then(function () { el("refreshBtn").disabled = false; });
-  }
-
-  // Fallback: live API failed -> show latest CSV snapshot, movement vs the prior snapshot.
-  function loadSnapshotOnly() {
-    setSource("", "<b>Live unavailable — loading snapshot…</b>");
-    return fetch(CSV_LB).then(function (r) { if (!r.ok) throw new Error("csv " + r.status); return r.text(); }).then(function (text) {
-      var lines = text.replace(/\r/g, "").split("\n").filter(Boolean);
-      var tsSet = {};
-      for (var i = 1; i < lines.length; i++) { var c = lines[i].indexOf(","); if (c > 0) tsSet[lines[i].slice(0, c)] = 1; }
-      var tss = Object.keys(tsSet).sort();
-      var lastTs = tss[tss.length - 1], prevTs = tss[tss.length - 2] || null;
-      var cur = [], prevMap = {};
-      for (var j = 1; j < lines.length; j++) {
-        var ln = lines[j], c2 = ln.indexOf(","), ts = ln.slice(0, c2), parts = ln.split(",");
-        if (ts === lastTs) cur.push({ rank: parseInt(parts[1],10), wallet: parts[2], username: parts.slice(3, parts.length-1).join(","), amount: parseInt(parts[parts.length-1],10) });
-        else if (ts === prevTs && parts[2]) prevMap[parts[2].toLowerCase()] = { rank: parseInt(parts[1],10), amount: parseInt(parts[parts.length-1],10) };
-      }
-      cur.sort(function (a, b) { return a.rank - b.rank; });
-      var totalHC = cur.reduce(function (s, e) { return s + e.amount; }, 0);
-      STATE.rows = computeRows(cur, prevTs ? { ts: prevTs, map: prevMap } : null);
-      setTopline(0, totalHC, cur.length, prevTs ? { ts: prevTs, map: prevMap } : null);
-      startCountdown(null);
-      setSource("snap", "<b>Snapshot</b> · " + fmtTime(lastTs) + " · " + commaInt(cur.length) + " players");
-      el("footNote").textContent = "Live API unreachable — showing snapshot " + fmtTime(lastTs) + " from repo history.";
-      render();
-    }).catch(function () {
-      setSource("err", "<b>Couldn't load data</b> — try Refresh.");
-      el("tbody").innerHTML = '<tr><td class="empty" colspan="6">Unable to load the leaderboard (live API and snapshot both failed).</td></tr>';
-    });
+  function load() {
+    el("refreshBtn").disabled = true;
+    el("srcText").innerHTML = "<b>Loading…</b>";
+    return fetch(JSON_URL, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("json " + r.status); return r.json(); })
+      .then(function (data) { apply(data); })
+      .catch(function () {
+        el("srcDot").className = "dot err";
+        el("srcText").innerHTML = "<b>Couldn't load the daily snapshot</b>";
+        el("tbody").innerHTML = '<tr><td class="empty" colspan="5">The daily snapshot file isn\'t available yet. It\'s generated by the tracker\'s twice-daily job.</td></tr>';
+      })
+      .then(function () { el("refreshBtn").disabled = false; });
   }
 
   el("search").addEventListener("input", render);
-  el("refreshBtn").addEventListener("click", function () { showAll = false; loadLive(); });
-  loadLive();
+  el("refreshBtn").addEventListener("click", function () { showAll = false; load(); });
+  startCountdown();
+  load();
 })();
 </script>
 </body>
