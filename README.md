@@ -70,6 +70,30 @@ lb = pd.read_csv("data/leaderboard_history.csv", parse_dates=["timestamp_utc"])
 lb[lb["username"] == "cryptologist"].plot(x="timestamp_utc", y="rank")
 ```
 
+## Web app: payout calculator (`index.html`)
+
+`index.html` is a self-contained calculator that estimates what a holder's Hard
+Cores are worth as a share of the prize pot. Enter a **minimum box cost**, **your
+HC**, the **prize pot**, and a **projected total HC**; it computes value per box,
+your payout, your share, and — from the *real* leaderboard distribution — how many
+boxes exist and how much HC is wasted (whole-boxes-only model, remainder wasted).
+
+**Data, three tiers (auto):**
+1. **Live** — on load it fetches the Gigaverse API directly (pot + all leaderboard
+   pages) and shows a live badge plus the event countdown. CORS is open, so this
+   works from any static host.
+2. **Repo snapshot** — if the live API is unreachable, it falls back to the
+   accumulating CSVs in `data/` (same-origin), using the most recent snapshot.
+3. **Built-in snapshot** — a copy baked into the page so it always renders even
+   offline.
+
+**Host it on GitHub Pages:** Settings → Pages → Source = *Deploy from a branch*,
+Branch = `main` / `/ (root)`. The page is then served at
+`https://<user>.github.io/gigaverse-awakening-tracker/`. A `.nojekyll` file is
+included so Pages serves the folder as-is. Note: a Pages site is **public**, and
+it serves everything in the repo (including `data/`), even when the repo is
+private — enable it only if you're fine with that.
+
 ## Analysis: HC value model
 
 `analysis/hc_value_model.py` estimates what each Hard Core (HC) is worth as a
