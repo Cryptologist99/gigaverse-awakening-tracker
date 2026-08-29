@@ -98,6 +98,8 @@
   .tl .d { font-size:.76rem; margin:6px 0 0; font-variant-numeric:tabular-nums; color:var(--ink-faint); }
   .tl .d.up { color:var(--up); } .tl .d.down { color:var(--down); }
 
+  .board-title { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1.15rem; letter-spacing:-.01em; margin:0 0 12px; }
+  .board-title .tt { color:var(--gold); }
   .controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
   .search { flex:1 1 240px; position:relative; }
   .search input { width:100%; font-family:"Instrument Sans",sans-serif; font-size:.95rem; color:var(--ink);
@@ -142,7 +144,7 @@
   <a class="brand" href="index.html"><span class="brand-mark">◆</span> Gigaverse Awakening Tracker</a>
   <div class="navlinks">
     <a href="index.html" class="navlink active">Leaderboard</a>
-    <a href="calculator.html" class="navlink">HC Calculator</a>
+    <a href="calculator.html" class="navlink">HC Estimator</a>
     <span class="navlink disabled">Supply <em>soon</em></span>
   </div>
 </nav>
@@ -173,6 +175,7 @@
     <div class="tl"><p class="k">Event ends in</p><p class="v" id="tlEnds">—</p><p class="d">Oct 9, 18:00 UTC</p></div>
   </div>
 
+  <h2 class="board-title" id="boardTitle">Leaderboard</h2>
   <div class="controls">
     <div class="search">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -194,7 +197,7 @@
             <th>Move</th>
             <th>Player</th>
             <th class="num">Hard Cores</th>
-            <th class="num">Δ since snap</th>
+            <th class="num">vs. previous day</th>
             <th class="num">Avg / day</th>
           </tr>
         </thead>
@@ -297,11 +300,11 @@
 
     if (prev) {
       var dPot = (cur.pot != null && prev.pot != null) ? cur.pot - prev.pot : null;
-      if (dPot != null) { el("tlPotD").className = "d " + (dPot > 0 ? "up" : dPot < 0 ? "down" : ""); el("tlPotD").textContent = (dPot >= 0 ? "+" : "−") + usd(Math.abs(dPot)) + " since snap"; }
+      if (dPot != null) { el("tlPotD").className = "d " + (dPot > 0 ? "up" : dPot < 0 ? "down" : ""); el("tlPotD").textContent = (dPot >= 0 ? "+" : "−") + usd(Math.abs(dPot)); }
       var dHC = (cur.totalHC || 0) - (prev.totalHC || 0);
-      el("tlHCD").className = "d " + (dHC > 0 ? "up" : dHC < 0 ? "down" : ""); el("tlHCD").textContent = signed(dHC) + " since snap";
+      el("tlHCD").className = "d " + (dHC > 0 ? "up" : dHC < 0 ? "down" : ""); el("tlHCD").textContent = signed(dHC);
       var dH = (cur.holders || 0) - (prev.holders || 0);
-      el("tlHoldersD").className = "d " + (dH > 0 ? "up" : dH < 0 ? "down" : ""); el("tlHoldersD").textContent = signed(dH) + " since snap";
+      el("tlHoldersD").className = "d " + (dH > 0 ? "up" : dH < 0 ? "down" : ""); el("tlHoldersD").textContent = signed(dH);
       el("mvSince").textContent = "vs " + fmtET(prev.ts);
     }
 
@@ -314,6 +317,7 @@
 
     el("srcDot").className = "dot";
     el("srcText").innerHTML = "Last snapshot <b>" + fmtET(cur.ts) + "</b>";
+    el("boardTitle").innerHTML = '<span class="tt">' + esc(fmtET(cur.ts)) + '</span> snapshot';
     el("footNote").textContent = "Daily snapshot (not live) · gigaverse.io leaderboard id 8 · generated " + fmtET(data.generatedAt) + ".";
     render();
   }
