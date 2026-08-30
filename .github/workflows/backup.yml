@@ -1,0 +1,50 @@
+name: Backup snapshot
+
+# Redundant safety-net snapshot, independent of the Raspberry Pi (which is the
+# primary, exact-time collector at 1:59 AM/PM ET). This runs on GitHub's servers
+# and writes to a SEPARATE ./backup folder, so it never conflicts with the Pi's
+# primary ./data. GitHub's scheduler can lag by minutes/hours — that's fine for a
+# backup; a slightly-late capture is still a valid backup, so there's no time gate.
+
+on:
+  schedule:
+    - cron: "30 17 * * *"    # 1:30 PM US Eastern (EDT, event runs entirely in EDT)
+  workflow_dispatch: {}      # allow a manual backup from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backup-snapshot
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Take backup snapshot (writes to ./backup)
+        env:
+          TRACKER_DATA_DIR: backup
+        run: python track_awakening.py
+
+      - name: Commit and push backup data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backup/
+          if git diff --cached --quiet; then
+            echo "no backup changes"; exit 0
+          fi
+          git commit -m "Backup snapshot: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          # the Pi may have pushed to data/ meanwhile — rebase onto it (different files, no conflict)
+          git pull --rebase origin main
+          git push origin HEAD:main

@@ -12,6 +12,7 @@ working even when nothing is open on your machine.
 """
 
 import csv
+import os
 import time
 import datetime as dt
 from pathlib import Path
@@ -27,7 +28,10 @@ MAX_PAGES = 60               # safety cap so an API hiccup can't loop forever
 REQUEST_DELAY_S = 0.4        # be polite between leaderboard page requests
 TIMEOUT_S = 15
 
-DATA_DIR = Path(__file__).parent / "data"
+# Output dir defaults to ./data next to this script. Set TRACKER_DATA_DIR to
+# write elsewhere — the GitHub Actions backup job points it at ./backup so its
+# snapshots never touch the Pi's primary data/.
+DATA_DIR = Path(os.environ.get("TRACKER_DATA_DIR") or (Path(__file__).parent / "data"))
 POT_CSV = DATA_DIR / "pot_history.csv"
 LEADERBOARD_CSV = DATA_DIR / "leaderboard_history.csv"
 
