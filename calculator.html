@@ -196,12 +196,12 @@
       <div class="field">
         <label for="jackpot">Prize pot <span class="unit">USD</span></label>
         <div class="input-shell"><span class="prefix">$</span><input type="text" id="jackpot" class="has-prefix" inputmode="decimal" value="0.00" autocomplete="off" spellcheck="false"></div>
-        <div class="helper"><button type="button" class="chip" id="useJackpot">Use current</button><button type="button" class="chip" id="projJackpot" title="Linear projection to event end (Oct 9 18:00 UTC), assuming the pot started at $30,000 on Aug 10 18:00 UTC and grows at the same daily rate.">Projected final</button></div>
+        <div class="helper"><button type="button" class="chip" id="useJackpot">Use current</button><button type="button" class="chip" id="projJackpot" title="Projection to event end (Oct 9 18:00 UTC) from recent momentum: current pot + the average daily pot growth over the last ~3 days.">Projected final</button></div>
       </div>
       <div class="field">
         <label for="totalHC">Projected total HC <span class="unit">HC in play</span></label>
         <div class="input-shell"><input type="text" id="totalHC" inputmode="numeric" value="0" autocomplete="off" spellcheck="false"></div>
-        <div class="helper"><button type="button" class="chip" id="useTotal">Use current</button><button type="button" class="chip" id="projTotal" title="Linear projection to event end (Oct 9 18:00 UTC), assuming total HC started at 0 on Aug 10 18:00 UTC and grows at the same daily rate.">Projected final</button></div>
+        <div class="helper"><button type="button" class="chip" id="useTotal">Use current</button><button type="button" class="chip" id="projTotal" title="Projection to event end (Oct 9 18:00 UTC) from recent momentum: current total HC + the average daily HC growth over the last ~3 days.">Projected final</button></div>
       </div>
     </section>
       <p class="col-note">Projections are simple linear projections based on accumulation over time since the beginning of the event. Guaranteed to be wrong.</p>
@@ -369,18 +369,18 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   function fmtInt(n) { return commaInt(n); }
   function fmtUsd(n) { return n.toLocaleString("en-US", { minimumFractionDigits:2, maximumFractionDigits:2 }); }
 
-  // Linear projection to event end: pot from $30k (Aug 10 18:00 UTC), HC from 0.
-  var EVENT_START = Date.UTC(2026, 7, 10, 18, 0, 0) / 1000;   // Aug 10 2026 18:00 UTC
-  var EVENT_END_FALLBACK = Date.UTC(2026, 9, 9, 18, 0, 0) / 1000; // Oct 9 2026 18:00 UTC (60-day event)
+  // Projection to event end using recent momentum — the average daily growth of the
+  // pot and total HC over the last ~3 days, computed server-side in data/projection.json.
+  // Applied to the live current pot/HC: final = current + perDay * daysRemaining.
+  var PROJ = null; // { potPerDay, hcPerDay, eventEnd, windowDays }
   function computeProjection() {
+    if (!PROJ || PROJ.potPerDay == null || PROJ.hcPerDay == null) return { valid: false };
+    var end = Date.parse(PROJ.eventEnd) / 1000;
     var now = STATE.serverTimestamp || (Date.now() / 1000);
-    var end = (STATE.serverTimestamp && STATE.secondsTillEnd != null)
-      ? STATE.serverTimestamp + STATE.secondsTillEnd
-      : EVENT_END_FALLBACK;
-    var elapsed = now - EVENT_START, duration = end - EVENT_START;
-    if (elapsed <= 0 || duration <= 0) return { valid: false };
-    var frac = Math.min(1, elapsed / duration);       // share of the event elapsed
-    return { valid: true, frac: frac, finalPot: 30000 + (STATE.pot - 30000) / frac, finalHC: STATE.total / frac };
+    var daysLeft = Math.max(0, (end - now) / 86400);
+    return { valid: true, daysLeft: daysLeft,
+             finalPot: STATE.pot + PROJ.potPerDay * daysLeft,
+             finalHC: STATE.total + PROJ.hcPerDay * daysLeft };
   }
 
   // reflect STATE into the "current" / "projected final" chips and (if untouched) the input defaults
@@ -535,6 +535,12 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   el("projJackpot").addEventListener("click", function () { var pr = computeProjection(); if (!pr.valid) return; f.jackpot.value = fmtUsd(pr.finalPot); touched.jackpot = true; calc(); });
   el("projTotal").addEventListener("click", function () { var pr = computeProjection(); if (!pr.valid) return; f.totalHC.value = fmtInt(pr.finalHC); touched.totalHC = true; calc(); });
   el("refreshBtn").addEventListener("click", function () { loadLive(); });
+
+  // recent-momentum projection rates (server-computed); refresh chips once loaded
+  fetch("data/projection.json", { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (p) { if (p) { PROJ = p; applyStateToUI(); } })
+    .catch(function () {});
   el("dailyHC").addEventListener("input", function () { liveComma(el("dailyHC")); });
   el("dailyHC").addEventListener("input", updateDaily);
   el("dailyHC").addEventListener("blur", function () { if (el("dailyHC").value.trim()) el("dailyHC").value = commaInt(parseNum(el("dailyHC").value)); });

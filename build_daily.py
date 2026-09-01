@@ -69,6 +69,17 @@ def main():
         return {"ts": ts, "pot": pot.get(ts),
                 "totalHC": sum(int(x["hard_cores"]) for x in rs), "holders": len(rs)}
 
+    # epoch + first-seen (earliest snapshot each wallet appears in), for a real avg/day
+    def epoch(ts):
+        return dt.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc).timestamp()
+    first_seen = {}
+    for ts in all_ts:
+        for r in rows_by_ts[ts]:
+            w = (r["wallet"] or "").lower()
+            if w and w not in first_seen:
+                first_seen[w] = (ts, int(r["hard_cores"]))
+    cur_epoch = epoch(cur)
+
     prev_map = wmap(prev) if prev else {}
     players = []
     for r in sorted(rows_by_ts[cur], key=lambda r: int(r["rank"])):
@@ -76,6 +87,13 @@ def main():
         p = prev_map.get(w)
         amt, rank = int(r["hard_cores"]), int(r["rank"])
         delta = (amt - p["amount"]) if p else None            # since previous (daily) snapshot
+        # avg/day: total growth since first seen ÷ days tracked (needs >= ~half a day of span)
+        avg = None
+        fs = first_seen.get(w)
+        if fs and fs[0] != cur:
+            days = (cur_epoch - epoch(fs[0])) / 86400.0
+            if days >= 0.5:
+                avg = round((amt - fs[1]) / days)
         players.append({
             "rank": rank,
             "name": r["username"] or "",
@@ -83,9 +101,7 @@ def main():
             "hcDelta": delta,
             "rankDelta": (p["rank"] - rank) if p else None,
             "isNew": p is None,
-            # avgPerDay: placeholder — mirrors the since-snapshot delta for now. Once there
-            # is enough snapshot history, replace with a real per-day average.
-            "avgPerDay": delta,
+            "avgPerDay": avg,
         })
 
     out = {
@@ -98,6 +114,30 @@ def main():
     with OUT.open("w", encoding="utf-8") as f:
         json.dump(out, f, separators=(",", ":"))
     print(f"wrote {OUT.name}: {len(players)} players, mode={mode}, cur={cur}, prev={prev}")
+
+    # ---- projection.json: average daily growth of pot & total HC over the last ~3 days ----
+    # The HC Estimator reads this so its "Projected final" uses recent momentum instead of a
+    # naive event-start-to-now line. Uses the snapshot nearest ~3 days back (or the oldest we
+    # have, until 3 days of history exist).
+    def total_hc(ts):
+        return sum(int(x["hard_cores"]) for x in rows_by_ts.get(ts, []))
+
+    PROJ_WINDOW_DAYS = 3
+    EVENT_END = "2026-10-09T18:00:00Z"
+    proj = {"asOf": cur, "windowDays": None, "potPerDay": None, "hcPerDay": None,
+            "potRef": pot.get(cur), "hcRef": total_hc(cur), "refTs": cur, "eventEnd": EVENT_END}
+    target = cur_epoch - PROJ_WINDOW_DAYS * 86400
+    past_ts = min(all_ts, key=lambda t: abs(epoch(t) - target))
+    days = (cur_epoch - epoch(past_ts)) / 86400.0
+    if days >= 0.5:
+        proj["windowDays"] = round(days, 2)
+        proj["hcPerDay"] = round((total_hc(cur) - total_hc(past_ts)) / days)
+        pc, pp = pot.get(cur), pot.get(past_ts)
+        if pc is not None and pp is not None:
+            proj["potPerDay"] = round((pc - pp) / days, 4)
+    with (DATA / "projection.json").open("w", encoding="utf-8") as f:
+        json.dump(proj, f, separators=(",", ":"))
+    print(f"wrote projection.json: windowDays={proj['windowDays']} potPerDay={proj['potPerDay']} hcPerDay={proj['hcPerDay']}")
 
 if __name__ == "__main__":
     main()
