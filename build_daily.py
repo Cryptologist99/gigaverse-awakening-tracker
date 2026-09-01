@@ -69,7 +69,9 @@ def main():
         return {"ts": ts, "pot": pot.get(ts),
                 "totalHC": sum(int(x["hard_cores"]) for x in rs), "holders": len(rs)}
 
-    # epoch + first-seen (earliest snapshot each wallet appears in), for a real avg/day
+    # epoch, first-seen, and a ~3-day-ago reference snapshot for a TRAILING avg/day.
+    # (Player growth tends to accelerate as they improve, so a moving 3-day window
+    # reflects current pace better than an all-time average.)
     def epoch(ts):
         return dt.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc).timestamp()
     first_seen = {}
@@ -80,6 +82,11 @@ def main():
                 first_seen[w] = (ts, int(r["hard_cores"]))
     cur_epoch = epoch(cur)
 
+    AVG_WINDOW_DAYS = 3
+    win_ts = min(all_ts, key=lambda t: abs(epoch(t) - (cur_epoch - AVG_WINDOW_DAYS * 86400)))
+    win_epoch = epoch(win_ts)
+    win_map = {(r["wallet"] or "").lower(): int(r["hard_cores"]) for r in rows_by_ts.get(win_ts, []) if r["wallet"]}
+
     prev_map = wmap(prev) if prev else {}
     players = []
     for r in sorted(rows_by_ts[cur], key=lambda r: int(r["rank"])):
@@ -87,13 +94,19 @@ def main():
         p = prev_map.get(w)
         amt, rank = int(r["hard_cores"]), int(r["rank"])
         delta = (amt - p["amount"]) if p else None            # since previous (daily) snapshot
-        # avg/day: total growth since first seen ÷ days tracked (needs >= ~half a day of span)
+        # trailing ~3-day avg/day: growth over the window, capped at the player's tenure
+        # (players present < 3 days use growth since they were first seen)
         avg = None
-        fs = first_seen.get(w)
-        if fs and fs[0] != cur:
-            days = (cur_epoch - epoch(fs[0])) / 86400.0
+        if w in win_map and win_ts != cur:
+            days = (cur_epoch - win_epoch) / 86400.0
             if days >= 0.5:
-                avg = round((amt - fs[1]) / days)
+                avg = round((amt - win_map[w]) / days)
+        else:
+            fs = first_seen.get(w)
+            if fs and fs[0] != cur:
+                days = (cur_epoch - epoch(fs[0])) / 86400.0
+                if days >= 0.5:
+                    avg = round((amt - fs[1]) / days)
         players.append({
             "rank": rank,
             "name": r["username"] or "",
@@ -122,17 +135,14 @@ def main():
     def total_hc(ts):
         return sum(int(x["hard_cores"]) for x in rows_by_ts.get(ts, []))
 
-    PROJ_WINDOW_DAYS = 3
     EVENT_END = "2026-10-09T18:00:00Z"
     proj = {"asOf": cur, "windowDays": None, "potPerDay": None, "hcPerDay": None,
             "potRef": pot.get(cur), "hcRef": total_hc(cur), "refTs": cur, "eventEnd": EVENT_END}
-    target = cur_epoch - PROJ_WINDOW_DAYS * 86400
-    past_ts = min(all_ts, key=lambda t: abs(epoch(t) - target))
-    days = (cur_epoch - epoch(past_ts)) / 86400.0
+    days = (cur_epoch - win_epoch) / 86400.0   # same ~3-day window as the per-player avg
     if days >= 0.5:
         proj["windowDays"] = round(days, 2)
-        proj["hcPerDay"] = round((total_hc(cur) - total_hc(past_ts)) / days)
-        pc, pp = pot.get(cur), pot.get(past_ts)
+        proj["hcPerDay"] = round((total_hc(cur) - total_hc(win_ts)) / days)
+        pc, pp = pot.get(cur), pot.get(win_ts)
         if pc is not None and pp is not None:
             proj["potPerDay"] = round((pc - pp) / days, 4)
     with (DATA / "projection.json").open("w", encoding="utf-8") as f:
