@@ -140,10 +140,9 @@
   <header class="masthead">
     <p class="eyebrow">Gigaverse · Rings</p>
     <h1>Ring Supply &amp; Price</h1>
-    <p class="lede">Aggregate <b>silver</b> (7 rings) and <b>gold</b> (7 rings) supply and trade price, tracked daily from
-      <a href="https://giga.market/supply" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;">giga.market</a>.
-      Rings have no active floor listings, so price is the <b>trailing 7-day volume-weighted trade price</b> (ETH spent ÷ items sold) — a
-      moving average, not a live ask.</p>
+    <p class="lede">Aggregate <b>silver</b> (7 rings) and <b>gold</b> (7 rings) supply and floor price, tracked daily from
+      <a href="https://giga.market/supply" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;">giga.market</a>'s
+      live order book. Floor tiles show each tier's average lowest ask, in ETH and USD.</p>
   </header>
 
   <div class="topline" id="tiles"></div>
@@ -159,10 +158,19 @@
 
   <div class="panel">
     <div class="panel-head">
-      <h2 class="panel-title">Trade price (7-day avg, ETH)</h2>
+      <h2 class="panel-title">Floor price (ETH)</h2>
       <div class="legend"><span><i class="sw s"></i>Silver</span><span><i class="sw g"></i>Gold</span></div>
     </div>
-    <p class="panel-note">Log scale — gold rings trade at a persistent premium over silver. Gaps mean no trades that week.</p>
+    <p class="panel-note">Average lowest ask across each tier's 7 rings, snapshotted daily. giga.market has no floor-price history API, so this series only starts accumulating from when tracking began — it'll fill in day by day. Hover for USD.</p>
+    <div class="chartwrap" id="floorChart"><div class="empty">Loading…</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2 class="panel-title">Historical trade price (7-day avg, ETH)</h2>
+      <div class="legend"><span><i class="sw s"></i>Silver</span><span><i class="sw g"></i>Gold</span></div>
+    </div>
+    <p class="panel-note">Log scale. Predates floor tracking — a proxy (ETH spent ÷ items sold, trailing 7 days) reconstructed from trade volume back to each ring's launch, not a live ask.</p>
     <div class="chartwrap" id="priceChart"><div class="empty">Loading…</div></div>
   </div>
 
@@ -178,14 +186,16 @@ const fmtInt = n => n == null ? '—' : n.toLocaleString('en-US');
 const fmtEth = n => n == null ? '—' : n < 0.001 ? n.toFixed(6) : n.toFixed(4);
 const fmtDate = s => { const d = new Date(s + 'T00:00:00Z'); return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', timeZone:'UTC' }); };
 
+const fmtUsd = n => n == null ? '—' : n < 0.01 ? '$' + n.toFixed(4) : '$' + n.toFixed(2);
+
 function renderTiles(agg) {
   const c = agg.current;
   const el = document.getElementById('tiles');
   el.innerHTML = `
     <div class="tl"><p class="k"><i class="sw s"></i>Silver supply</p><p class="v">${fmtInt(c.silver.supply)}</p><p class="d">${fmtInt(c.silver.holders)} holders</p></div>
     <div class="tl"><p class="k"><i class="sw g"></i>Gold supply</p><p class="v">${fmtInt(c.gold.supply)}</p><p class="d">${fmtInt(c.gold.holders)} holders</p></div>
-    <div class="tl"><p class="k"><i class="sw s"></i>Silver price</p><p class="v">${fmtEth(c.silver.priceEth)}</p><p class="d">ETH · 7d avg</p></div>
-    <div class="tl"><p class="k"><i class="sw g"></i>Gold price</p><p class="v">${fmtEth(c.gold.priceEth)}</p><p class="d">ETH · 7d avg</p></div>
+    <div class="tl"><p class="k"><i class="sw s"></i>Silver floor</p><p class="v">${fmtUsd(c.silver.floorUsd)}</p><p class="d">${fmtEth(c.silver.floorEth)} ETH</p></div>
+    <div class="tl"><p class="k"><i class="sw g"></i>Gold floor</p><p class="v">${fmtUsd(c.gold.floorUsd)}</p><p class="d">${fmtEth(c.gold.floorEth)} ETH</p></div>
   `;
 }
 
@@ -263,9 +273,10 @@ function drawChart(containerId, series, sKey, gKey, opts) {
     hl.style.display = ''; hl.setAttribute('x1', x(idx)); hl.setAttribute('x2', x(idx));
     if (p[sKey] != null) { hs.style.display = ''; hs.setAttribute('cx', x(idx)); hs.setAttribute('cy', y(p[sKey])); } else hs.style.display = 'none';
     if (p[gKey] != null) { hg.style.display = ''; hg.setAttribute('cx', x(idx)); hg.setAttribute('cy', y(p[gKey])); } else hg.style.display = 'none';
+    const usdFor = key => opts.usdKeys ? p[opts.usdKeys[key === sKey ? 0 : 1]] : null;
     tt.innerHTML = `<div class="tt-date">${fmtDate(p.date)}</div>`
-      + (p[sKey] != null ? `<div>Silver <b>${opts.fmt(p[sKey])}</b></div>` : '')
-      + (p[gKey] != null ? `<div>Gold <b>${opts.fmt(p[gKey])}</b></div>` : '');
+      + (p[sKey] != null ? `<div>Silver <b>${opts.fmt(p[sKey])}</b>${usdFor(sKey) != null ? ' · ' + fmtUsd(usdFor(sKey)) : ''}</div>` : '')
+      + (p[gKey] != null ? `<div>Gold <b>${opts.fmt(p[gKey])}</b>${usdFor(gKey) != null ? ' · ' + fmtUsd(usdFor(gKey)) : ''}</div>` : '');
     tt.classList.add('show');
     const leftPct = (x(idx) / W) * 100;
     tt.style.left = leftPct + '%'; tt.style.top = (y(p[sKey] ?? p[gKey]) / H * 100) + '%';
@@ -279,16 +290,18 @@ async function load() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const agg = await res.json();
     document.getElementById('srcDot').className = 'dot';
-    document.getElementById('srcText').innerHTML = `<b>Live digest</b> · supply as of ${fmtDate(agg.current.supplyAsOf)} · price as of ${fmtDate(agg.current.priceAsOf)}`;
-    document.getElementById('genAt').textContent = 'Digest generated ' + new Date(agg.generatedAt).toLocaleString('en-US', { timeZone:'America/New_York', dateStyle:'medium', timeStyle:'short' }) + ' ET';
+    document.getElementById('srcText').innerHTML = `<b>Live digest</b> · supply as of ${fmtDate(agg.current.supplyAsOf)} · floor as of ${fmtDate(agg.current.floorAsOf)}`;
+    document.getElementById('genAt').textContent = 'Digest generated ' + new Date(agg.generatedAt).toLocaleString('en-US', { timeZone:'America/New_York', dateStyle:'medium', timeStyle:'short' }) + ' ET · ETH/USD ' + fmtUsd(agg.ethUsdRate);
     renderTiles(agg);
     drawChart('supplyChart', agg.supplySeries, 'silverSupply', 'goldSupply', { log:false, fmt: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : String(Math.round(v)) });
-    drawChart('priceChart', agg.priceSeries, 'silverPriceEth', 'goldPriceEth', { log:true, fmt: v => v.toFixed(v < 0.001 ? 6 : 4) });
+    drawChart('floorChart', agg.floorSeries, 'silverFloorEth', 'goldFloorEth', { log:true, fmt: v => v.toFixed(v < 0.001 ? 6 : 4), usdKeys: ['silverFloorUsd', 'goldFloorUsd'] });
+    drawChart('priceChart', agg.tradePriceSeries, 'silverPriceEth', 'goldPriceEth', { log:true, fmt: v => v.toFixed(v < 0.001 ? 6 : 4), usdKeys: ['silverPriceUsd', 'goldPriceUsd'] });
   } catch (e) {
     document.getElementById('srcDot').className = 'dot err';
     document.getElementById('srcText').innerHTML = `<b>Failed to load</b> — ${e.message}`;
     document.getElementById('tiles').innerHTML = '';
     document.getElementById('supplyChart').innerHTML = '<div class="empty">Couldn\'t load data.</div>';
+    document.getElementById('floorChart').innerHTML = '<div class="empty">Couldn\'t load data.</div>';
     document.getElementById('priceChart').innerHTML = '<div class="empty">Couldn\'t load data.</div>';
   }
 }
