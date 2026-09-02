@@ -102,8 +102,7 @@
   .group { margin-bottom:26px; }
   .group-title { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1.1rem; letter-spacing:-.01em; margin:0 0 4px; }
   .group-note { font-size:.8rem; color:var(--ink-faint); margin:0 0 12px; max-width:74ch; }
-  .chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  @media (max-width:820px) { .chart-grid { grid-template-columns:1fr; } }
+  .chart-grid { display:flex; flex-direction:column; gap:16px; }
 
   .panel { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:15px 17px 10px; }
   .panel-head { display:flex; align-items:center; gap:7px; margin-bottom:8px; }
@@ -117,6 +116,7 @@
   .axislabel { font-family:"IBM Plex Mono",monospace; font-size:9px; fill:var(--ink-faint); }
   .lineS { fill:none; stroke:var(--silver); stroke-width:2; }
   .lineG { fill:none; stroke:var(--gold); stroke-width:2; }
+  .pt.s { fill:var(--silver); } .pt.g { fill:var(--gold); }
   .hoverline { stroke:var(--line-strong); stroke-width:1; stroke-dasharray:3 3; }
   .hoverdot { fill:var(--bg); stroke-width:2; }
   .hoverdot.s { stroke:var(--silver); } .hoverdot.g { stroke:var(--gold); }
@@ -219,8 +219,7 @@
   </section>
 
   <footer>
-    <span>Snapshots run twice daily on an always-on tracker. Source data on
-      <a href="https://github.com/Cryptologist99/gigaverse-awakening-tracker" target="_blank" rel="noopener">GitHub</a>.</span>
+    <span>Snapshots run twice daily on an always-on tracker.</span>
     <span id="genAt"></span>
   </footer>
 </div>
@@ -257,7 +256,7 @@ function drawChart(containerId, series, key, usdKey, opts) {
   const pts = (series || []).filter(p => p[key] != null);
   if (pts.length < 2) { container.innerHTML = `<div class="empty">${opts.emptyMsg || 'Not enough data in this range'}</div>`; return; }
 
-  const W = 1000, H = 220, PAD = { t:10, r:12, b:22, l:50 };
+  const W = 1000, H = 260, PAD = { t:10, r:12, b:22, l:50 };
   const log = !!opts.log;
   const vals = pts.map(p => p[key]).filter(v => !log || v > 0);
   let vmin = Math.min(...vals), vmax = Math.max(...vals);
@@ -272,12 +271,17 @@ function drawChart(containerId, series, key, usdKey, opts) {
     return H - PAD.b - ((vv - vmin) / (vmax - vmin)) * (H - PAD.t - PAD.b);
   };
 
+  const colorClass = opts.color === 'g' ? 'g' : 's';
+  const dotR = pts.length > 120 ? 1.6 : pts.length > 45 ? 2.2 : 3;
+
   let d = '', started = false;
+  const dots = [];
   pts.forEach((p, i) => {
     const v = p[key];
     if (v == null || (log && v <= 0)) { started = false; return; }
     d += (started ? ' L ' : ' M ') + x(i).toFixed(2) + ' ' + y(v).toFixed(2);
     started = true;
+    dots.push(`<circle class="pt ${colorClass}" cx="${x(i).toFixed(2)}" cy="${y(v).toFixed(2)}" r="${dotR}"/>`);
   });
 
   const nTicks = 4, gridlines = [];
@@ -292,15 +296,15 @@ function drawChart(containerId, series, key, usdKey, opts) {
   const xlabels = xTickIdx.map(i => `<text class="axislabel" x="${x(i).toFixed(1)}" y="${H-4}" text-anchor="middle">${fmtDate(pts[i].date)}</text>`).join('');
 
   const lineClass = opts.color === 'g' ? 'lineG' : 'lineS';
-  const dotClass = opts.color === 'g' ? 'g' : 's';
 
   container.innerHTML = `
     <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
       ${gridlines.join('')}
       <path class="${lineClass}" d="${d}"/>
+      ${dots.join('')}
       ${xlabels}
       <line class="hoverline" id="${containerId}-hl" x1="0" x2="0" y1="${PAD.t}" y2="${H-PAD.b}" style="display:none"/>
-      <circle class="hoverdot ${dotClass}" id="${containerId}-hd" r="3.5" style="display:none"/>
+      <circle class="hoverdot ${colorClass}" id="${containerId}-hd" r="3.5" style="display:none"/>
       <rect id="${containerId}-hitbox" x="${PAD.l}" y="0" width="${W-PAD.l-PAD.r}" height="${H}" fill="transparent"/>
     </svg>
     <div class="tooltip" id="${containerId}-tt"></div>
