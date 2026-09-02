@@ -87,6 +87,7 @@
   .tl .k .sw.s { background:var(--silver); } .tl .k .sw.g { background:var(--gold); }
   .tl .v { font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:0; line-height:1; }
   .tl .d { font-size:.76rem; margin:6px 0 0; font-variant-numeric:tabular-nums; color:var(--ink-faint); }
+  .tl .d.up { color:var(--up); } .tl .d.down { color:var(--down); }
 
   .rangebar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 22px; }
   .rangechips { display:flex; gap:6px; flex-wrap:wrap; }
@@ -154,9 +155,9 @@
   <header class="masthead">
     <p class="eyebrow">Gigaverse · Rings</p>
     <h1>Ring Supply &amp; Price</h1>
-    <p class="lede">Aggregate <b>silver</b> (7 rings) and <b>gold</b> (7 rings) supply and floor price, tracked daily from
-      <a href="https://giga.market/supply" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;">giga.market</a>'s
-      live order book. Tiles always show the latest snapshot; use the range below to zoom the charts.</p>
+    <p class="lede">Aggregate <b>silver</b> (7 rings) and <b>gold</b> (7 rings) supply and trade price, tracked daily from
+      <a href="https://giga.market/supply" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;">giga.market</a>.
+      Tiles show the latest snapshot vs. the previous day; use the range below to zoom the charts.</p>
   </header>
 
   <div class="topline" id="tiles"></div>
@@ -189,23 +190,8 @@
   </section>
 
   <section class="group">
-    <h2 class="group-title">Floor price (ETH, log scale)</h2>
-    <p class="group-note">Average lowest ask across each tier's 7 rings, snapshotted daily. giga.market has no floor-price history API, so this only starts accumulating from when tracking began — it fills in day by day. Hover for USD.</p>
-    <div class="chart-grid">
-      <div class="panel">
-        <div class="panel-head"><h3 class="panel-title"><i class="sw s"></i>Silver</h3></div>
-        <div class="chartwrap" id="floorChartS"><div class="empty">Loading…</div></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h3 class="panel-title"><i class="sw g"></i>Gold</h3></div>
-        <div class="chartwrap" id="floorChartG"><div class="empty">Loading…</div></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="group">
-    <h2 class="group-title">Historical trade price (7-day avg, ETH, log scale)</h2>
-    <p class="group-note">Predates floor tracking — a proxy (ETH spent ÷ items sold, trailing 7 days) reconstructed from trade volume back to each ring's launch, not a live ask. USD uses that same day's actual ETH rate where available.</p>
+    <h2 class="group-title">Trade price (7-day avg, ETH, log scale)</h2>
+    <p class="group-note">ETH spent ÷ items sold, trailing 7 days, reconstructed from trade volume back to each ring's launch. USD uses that same day's actual ETH rate where available.</p>
     <div class="chart-grid">
       <div class="panel">
         <div class="panel-head"><h3 class="panel-title"><i class="sw s"></i>Silver</h3></div>
@@ -242,11 +228,16 @@ let RANGE = { from: null, to: null };
 function renderTiles(agg) {
   const c = agg.current;
   const el = document.getElementById('tiles');
+  const deltaHtml = d => {
+    if (d == null || d === 0) return `<p class="d">No change vs ${fmtDate(agg.current.supplyDeltaFrom)}</p>`;
+    const up = d > 0;
+    return `<p class="d ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${fmtInt(Math.abs(d))} vs ${fmtDate(agg.current.supplyDeltaFrom)}</p>`;
+  };
   el.innerHTML = `
-    <div class="tl"><p class="k"><i class="sw s"></i>Silver supply</p><p class="v">${fmtInt(c.silver.supply)}</p><p class="d">${fmtInt(c.silver.holders)} holders</p></div>
-    <div class="tl"><p class="k"><i class="sw g"></i>Gold supply</p><p class="v">${fmtInt(c.gold.supply)}</p><p class="d">${fmtInt(c.gold.holders)} holders</p></div>
-    <div class="tl"><p class="k"><i class="sw s"></i>Silver floor</p><p class="v">${fmtUsd(c.silver.floorUsd)}</p><p class="d">${fmtEth(c.silver.floorEth)} ETH</p></div>
-    <div class="tl"><p class="k"><i class="sw g"></i>Gold floor</p><p class="v">${fmtUsd(c.gold.floorUsd)}</p><p class="d">${fmtEth(c.gold.floorEth)} ETH</p></div>
+    <div class="tl"><p class="k"><i class="sw s"></i>Silver supply</p><p class="v">${fmtInt(c.silver.supply)}</p>${deltaHtml(c.silver.supplyDelta)}</div>
+    <div class="tl"><p class="k"><i class="sw g"></i>Gold supply</p><p class="v">${fmtInt(c.gold.supply)}</p>${deltaHtml(c.gold.supplyDelta)}</div>
+    <div class="tl"><p class="k"><i class="sw s"></i>Silver price</p><p class="v">${fmtUsd(c.silver.tradePriceUsd)}</p><p class="d">${fmtEth(c.silver.tradePriceEth)} ETH · 7d avg</p></div>
+    <div class="tl"><p class="k"><i class="sw g"></i>Gold price</p><p class="v">${fmtUsd(c.gold.tradePriceUsd)}</p><p class="d">${fmtEth(c.gold.tradePriceEth)} ETH · 7d avg</p></div>
   `;
 }
 
@@ -344,8 +335,6 @@ function renderAllCharts() {
   const r = RANGE;
   drawChart('supplyChartS', filterSeries(RAW.supplySeries, r), 'silverSupply', null, { log:false, fmt:intAxis, tipFmt:fmtInt, color:'s' });
   drawChart('supplyChartG', filterSeries(RAW.supplySeries, r), 'goldSupply', null, { log:false, fmt:intAxis, tipFmt:fmtInt, color:'g' });
-  drawChart('floorChartS', filterSeries(RAW.floorSeries, r), 'silverFloorEth', 'silverFloorUsd', { log:true, fmt:ethAxis, color:'s', emptyMsg:'Collecting daily floor snapshots — check back soon' });
-  drawChart('floorChartG', filterSeries(RAW.floorSeries, r), 'goldFloorEth', 'goldFloorUsd', { log:true, fmt:ethAxis, color:'g', emptyMsg:'Collecting daily floor snapshots — check back soon' });
   drawChart('priceChartS', filterSeries(RAW.tradePriceSeries, r), 'silverPriceEth', 'silverPriceUsd', { log:true, fmt:ethAxis, color:'s' });
   drawChart('priceChartG', filterSeries(RAW.tradePriceSeries, r), 'goldPriceEth', 'goldPriceUsd', { log:true, fmt:ethAxis, color:'g' });
 }
@@ -399,7 +388,7 @@ async function load() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     RAW = await res.json();
     document.getElementById('srcDot').className = 'dot';
-    document.getElementById('srcText').innerHTML = `<b>Live digest</b> · supply as of ${fmtDate(RAW.current.supplyAsOf)} · floor as of ${fmtDate(RAW.current.floorAsOf)}`;
+    document.getElementById('srcText').innerHTML = `<b>Live digest</b> · supply as of ${fmtDate(RAW.current.supplyAsOf)} · price as of ${fmtDate(RAW.current.tradePriceAsOf)}`;
     document.getElementById('genAt').textContent = 'Digest generated ' + new Date(RAW.generatedAt).toLocaleString('en-US', { timeZone:'America/New_York', dateStyle:'medium', timeStyle:'short' }) + ' ET · ETH/USD ' + fmtUsd(RAW.ethUsdRate);
     renderTiles(RAW);
     setupRangeControls();
@@ -407,7 +396,7 @@ async function load() {
     document.getElementById('srcDot').className = 'dot err';
     document.getElementById('srcText').innerHTML = `<b>Failed to load</b> — ${e.message}`;
     document.getElementById('tiles').innerHTML = '';
-    ['supplyChartS','supplyChartG','floorChartS','floorChartG','priceChartS','priceChartG'].forEach(id => {
+    ['supplyChartS','supplyChartG','priceChartS','priceChartG'].forEach(id => {
       document.getElementById(id).innerHTML = '<div class="empty">Couldn\'t load data.</div>';
     });
   }

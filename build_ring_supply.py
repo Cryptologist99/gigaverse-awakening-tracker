@@ -180,9 +180,13 @@ def main():
     floor_series, floor_eth_usd_rate = build_floor_series()
 
     cur_supply = supply_series[-1] if supply_series else {}
+    prev_supply = supply_series[-2] if len(supply_series) > 1 else {}
     cur_price = price_series[-1] if price_series else {}
     cur_floor = floor_series[-1] if floor_series else {}
     latest_rate = floor_eth_usd_rate or (eth_usd_hist.get(max(eth_usd_hist)) if eth_usd_hist else None)
+
+    def delta(cur, prev):
+        return cur - prev if cur is not None and prev is not None else None
 
     out = {
         "generatedAt": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -191,15 +195,18 @@ def main():
         "current": {
             "silver": {
                 "supply": cur_supply.get("silverSupply"), "holders": cur_supply.get("silverHolders"),
+                "supplyDelta": delta(cur_supply.get("silverSupply"), prev_supply.get("silverSupply")),
                 "tradePriceEth": cur_price.get("silverPriceEth"), "tradePriceUsd": cur_price.get("silverPriceUsd"),
                 "floorEth": cur_floor.get("silverFloorEth"), "floorUsd": cur_floor.get("silverFloorUsd"),
             },
             "gold": {
                 "supply": cur_supply.get("goldSupply"), "holders": cur_supply.get("goldHolders"),
+                "supplyDelta": delta(cur_supply.get("goldSupply"), prev_supply.get("goldSupply")),
                 "tradePriceEth": cur_price.get("goldPriceEth"), "tradePriceUsd": cur_price.get("goldPriceUsd"),
                 "floorEth": cur_floor.get("goldFloorEth"), "floorUsd": cur_floor.get("goldFloorUsd"),
             },
             "supplyAsOf": supply_series[-1]["date"] if supply_series else None,
+            "supplyDeltaFrom": prev_supply.get("date"),
             "tradePriceAsOf": price_series[-1]["date"] if price_series else None,
             "floorAsOf": floor_series[-1]["date"] if floor_series else None,
         },
