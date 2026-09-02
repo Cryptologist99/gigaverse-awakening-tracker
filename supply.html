@@ -325,7 +325,8 @@ function drawChart(containerId, series, key, usdKey, opts) {
     hl.style.display = ''; hl.setAttribute('x1', x(idx)); hl.setAttribute('x2', x(idx));
     hd.style.display = ''; hd.setAttribute('cx', x(idx)); hd.setAttribute('cy', y(p[key]));
     const usdVal = usdKey ? p[usdKey] : null;
-    tt.innerHTML = `<div class="tt-date">${fmtDate(p.date)}</div><div><b>${opts.fmt(p[key])}</b>${usdVal != null ? ' · ' + fmtUsd(usdVal) : ''}</div>`;
+    const tipFmt = opts.tipFmt || opts.fmt;
+    tt.innerHTML = `<div class="tt-date">${fmtDate(p.date)}</div><div><b>${tipFmt(p[key])}</b>${usdVal != null ? ' · ' + fmtUsd(usdVal) : ''}</div>`;
     tt.classList.add('show');
     tt.style.left = (x(idx) / W * 100) + '%'; tt.style.top = (y(p[key]) / H * 100) + '%';
   });
@@ -341,8 +342,8 @@ function filterSeries(series, range) {
 function renderAllCharts() {
   if (!RAW) return;
   const r = RANGE;
-  drawChart('supplyChartS', filterSeries(RAW.supplySeries, r), 'silverSupply', null, { log:false, fmt:intAxis, color:'s' });
-  drawChart('supplyChartG', filterSeries(RAW.supplySeries, r), 'goldSupply', null, { log:false, fmt:intAxis, color:'g' });
+  drawChart('supplyChartS', filterSeries(RAW.supplySeries, r), 'silverSupply', null, { log:false, fmt:intAxis, tipFmt:fmtInt, color:'s' });
+  drawChart('supplyChartG', filterSeries(RAW.supplySeries, r), 'goldSupply', null, { log:false, fmt:intAxis, tipFmt:fmtInt, color:'g' });
   drawChart('floorChartS', filterSeries(RAW.floorSeries, r), 'silverFloorEth', 'silverFloorUsd', { log:true, fmt:ethAxis, color:'s', emptyMsg:'Collecting daily floor snapshots — check back soon' });
   drawChart('floorChartG', filterSeries(RAW.floorSeries, r), 'goldFloorEth', 'goldFloorUsd', { log:true, fmt:ethAxis, color:'g', emptyMsg:'Collecting daily floor snapshots — check back soon' });
   drawChart('priceChartS', filterSeries(RAW.tradePriceSeries, r), 'silverPriceEth', 'silverPriceUsd', { log:true, fmt:ethAxis, color:'s' });
