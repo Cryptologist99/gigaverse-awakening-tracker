@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ring Supply &amp; Price</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<meta name="description" content="Aggregate silver and gold Gigaverse ring supply and trade price, tracked daily.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg:#ECEBF2; --surface:#F7F6FB; --surface-2:#EFEEF6;
+    --ink:#1B1A28; --ink-soft:#55536A; --ink-faint:#8A889E;
+    --line:#DAD8E6; --line-strong:#C6C3D6;
+    --gold:#A9741E; --gold-bg:#F3E7CE; --teal:#1E8E7E; --danger:#B4472F; --live:#1E8E7E;
+    --up:#1E8E7E; --down:#B4472F; --focus:#7C69C9;
+    --silver:#7C7A92; --silver-bg:#E6E5EF;
+    --shadow:0 1px 2px rgba(27,26,40,.06),0 12px 32px -12px rgba(27,26,40,.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#100F17; --surface:#1A1926; --surface-2:#221F31;
+      --ink:#ECEAF4; --ink-soft:#ADA9C4; --ink-faint:#746F8C;
+      --line:#2C2A3C; --line-strong:#3B3850;
+      --gold:#E8B85C; --gold-bg:#2A2213; --teal:#46C7B4; --danger:#E88266; --live:#46C7B4;
+      --up:#46C7B4; --down:#E88266; --focus:#A594F0;
+      --silver:#B8B6CC; --silver-bg:#28273A;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#100F17; --surface:#1A1926; --surface-2:#221F31;
+    --ink:#ECEAF4; --ink-soft:#ADA9C4; --ink-faint:#746F8C;
+    --line:#2C2A3C; --line-strong:#3B3850;
+    --gold:#E8B85C; --gold-bg:#2A2213; --teal:#46C7B4; --danger:#E88266; --live:#46C7B4;
+    --up:#46C7B4; --down:#E88266; --focus:#A594F0;
+    --silver:#B8B6CC; --silver-bg:#28273A;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -16px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Instrument Sans",system-ui,-apple-system,sans-serif; font-size:16px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--gold) 10%, transparent) 0%, transparent 55%),
+      radial-gradient(90% 80% at 0% 100%, color-mix(in oklab, var(--focus) 9%, transparent) 0%, transparent 50%);
+    background-attachment:fixed;
+  }
+
+  .topnav { position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding:11px clamp(16px,4vw,48px); background:color-mix(in oklab,var(--surface) 85%,transparent); backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .brand { display:inline-flex; align-items:center; gap:9px; font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:1rem; letter-spacing:-.01em; color:var(--ink); text-decoration:none; }
+  .brand-mark { color:var(--gold); font-size:1.05em; }
+  .navlinks { display:flex; gap:5px; flex-wrap:wrap; }
+  .navlink { font-size:.88rem; font-weight:600; color:var(--ink-soft); text-decoration:none; padding:7px 13px; border-radius:9px; transition:background .15s,color .15s; }
+  .navlink:hover { background:var(--surface-2); color:var(--ink); }
+  .navlink.active { background:var(--gold-bg); color:var(--gold); }
+
+  .wrap { max-width:1080px; margin:0 auto; padding:clamp(20px,4vw,48px); }
+
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
+  .source { display:inline-flex; align-items:center; gap:9px; font-size:.82rem; color:var(--ink-soft);
+    background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 8px 6px 13px; box-shadow:var(--shadow); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--gold); flex:none; }
+  .dot.err { background:var(--danger); }
+  #srcText b { color:var(--ink); font-weight:600; }
+
+  header.masthead { margin-bottom:18px; }
+  .eyebrow { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  .eyebrow::before { content:""; width:22px; height:1px; background:var(--gold); display:inline-block; }
+  h1 { font-family:"Bricolage Grotesque","Instrument Sans",sans-serif; font-weight:800; font-size:clamp(1.9rem,5vw,2.9rem); line-height:1.03; letter-spacing:-.02em; margin:0 0 10px; text-wrap:balance; }
+  .lede { color:var(--ink-soft); max-width:66ch; margin:0; font-size:1rem; }
+  .lede b { color:var(--ink); font-weight:600; }
+
+  .topline { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:22px 0; }
+  @media (max-width:780px) { .topline { grid-template-columns:repeat(2,1fr); } }
+  .tl { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 17px; box-shadow:var(--shadow); }
+  .tl .k { font-size:.74rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 7px; font-weight:600; display:flex; align-items:center; gap:6px; }
+  .tl .k .sw { width:8px; height:8px; border-radius:50%; flex:none; }
+  .tl .k .sw.s { background:var(--silver); } .tl .k .sw.g { background:var(--gold); }
+  .tl .v { font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:0; line-height:1; }
+  .tl .d { font-size:.76rem; margin:6px 0 0; font-variant-numeric:tabular-nums; color:var(--ink-faint); }
+
+  .panel { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:18px 20px 12px; margin-bottom:18px; }
+  .panel-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .panel-title { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1.05rem; letter-spacing:-.01em; margin:0; }
+  .panel-note { font-size:.78rem; color:var(--ink-faint); margin:0 0 10px; }
+  .legend { display:flex; gap:14px; font-size:.8rem; color:var(--ink-soft); }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend .sw { width:10px; height:3px; border-radius:2px; display:inline-block; }
+  .legend .sw.s { background:var(--silver); } .legend .sw.g { background:var(--gold); }
+
+  .chartwrap { position:relative; }
+  .chartwrap svg { width:100%; height:auto; display:block; overflow:visible; }
+  .gridline { stroke:var(--line); stroke-width:1; }
+  .axislabel { font-family:"IBM Plex Mono",monospace; font-size:9px; fill:var(--ink-faint); }
+  .lineS { fill:none; stroke:var(--silver); stroke-width:2; }
+  .lineG { fill:none; stroke:var(--gold); stroke-width:2; }
+  .hoverline { stroke:var(--line-strong); stroke-width:1; stroke-dasharray:3 3; }
+  .hoverdot { fill:var(--bg); stroke-width:2; }
+  .hoverdot.s { stroke:var(--silver); } .hoverdot.g { stroke:var(--gold); }
+  .tooltip { position:absolute; pointer-events:none; background:var(--surface-2); border:1px solid var(--line-strong);
+    border-radius:8px; padding:7px 10px; font-size:.76rem; color:var(--ink-soft); box-shadow:var(--shadow); white-space:nowrap;
+    transform:translate(-50%,-115%); opacity:0; transition:opacity .1s; }
+  .tooltip.show { opacity:1; }
+  .tooltip b { color:var(--ink); font-family:"IBM Plex Mono",monospace; }
+  .tooltip .tt-date { color:var(--ink-faint); font-family:"IBM Plex Mono",monospace; font-size:.72rem; margin-bottom:3px; }
+
+  .empty { padding:26px 14px; text-align:center; color:var(--ink-faint); }
+
+  footer { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
+  footer a { color:var(--gold); text-decoration:none; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="index.html"><span class="brand-mark">◆</span> Gigaverse Awakening Tracker</a>
+  <div class="navlinks">
+    <a href="index.html" class="navlink">Leaderboard</a>
+    <a href="calculator.html" class="navlink">HC Estimator</a>
+    <a href="supply.html" class="navlink active">Supply</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="source">
+      <span class="dot" id="srcDot"></span>
+      <span id="srcText">Loading…</span>
+    </div>
+  </div>
+
+  <header class="masthead">
+    <p class="eyebrow">Gigaverse · Rings</p>
+    <h1>Ring Supply &amp; Price</h1>
+    <p class="lede">Aggregate <b>silver</b> (7 rings) and <b>gold</b> (7 rings) supply and trade price, tracked daily from
+      <a href="https://giga.market/supply" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;">giga.market</a>.
+      Rings have no active floor listings, so price is the <b>trailing 7-day volume-weighted trade price</b> (ETH spent ÷ items sold) — a
+      moving average, not a live ask.</p>
+  </header>
+
+  <div class="topline" id="tiles"></div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2 class="panel-title">Total supply</h2>
+      <div class="legend"><span><i class="sw s"></i>Silver</span><span><i class="sw g"></i>Gold</span></div>
+    </div>
+    <p class="panel-note">Combined item count across all 7 rings in each tier.</p>
+    <div class="chartwrap" id="supplyChart"><div class="empty">Loading…</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2 class="panel-title">Trade price (7-day avg, ETH)</h2>
+      <div class="legend"><span><i class="sw s"></i>Silver</span><span><i class="sw g"></i>Gold</span></div>
+    </div>
+    <p class="panel-note">Log scale — gold rings trade at a persistent premium over silver. Gaps mean no trades that week.</p>
+    <div class="chartwrap" id="priceChart"><div class="empty">Loading…</div></div>
+  </div>
+
+  <footer>
+    <span>Snapshots run twice daily on an always-on tracker. Source data on
+      <a href="https://github.com/Cryptologist99/gigaverse-awakening-tracker" target="_blank" rel="noopener">GitHub</a>.</span>
+    <span id="genAt"></span>
+  </footer>
+</div>
+
+<script>
+const fmtInt = n => n == null ? '—' : n.toLocaleString('en-US');
+const fmtEth = n => n == null ? '—' : n < 0.001 ? n.toFixed(6) : n.toFixed(4);
+const fmtDate = s => { const d = new Date(s + 'T00:00:00Z'); return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', timeZone:'UTC' }); };
+
+function renderTiles(agg) {
+  const c = agg.current;
+  const el = document.getElementById('tiles');
+  el.innerHTML = `
+    <div class="tl"><p class="k"><i class="sw s"></i>Silver supply</p><p class="v">${fmtInt(c.silver.supply)}</p><p class="d">${fmtInt(c.silver.holders)} holders</p></div>
+    <div class="tl"><p class="k"><i class="sw g"></i>Gold supply</p><p class="v">${fmtInt(c.gold.supply)}</p><p class="d">${fmtInt(c.gold.holders)} holders</p></div>
+    <div class="tl"><p class="k"><i class="sw s"></i>Silver price</p><p class="v">${fmtEth(c.silver.priceEth)}</p><p class="d">ETH · 7d avg</p></div>
+    <div class="tl"><p class="k"><i class="sw g"></i>Gold price</p><p class="v">${fmtEth(c.gold.priceEth)}</p><p class="d">ETH · 7d avg</p></div>
+  `;
+}
+
+// Minimal dependency-free line chart: two series (s/g), optional log y-scale, hover tooltip.
+function drawChart(containerId, series, sKey, gKey, opts) {
+  const container = document.getElementById(containerId);
+  const pts = series.filter(p => p[sKey] != null || p[gKey] != null);
+  if (pts.length < 2) { container.innerHTML = '<div class="empty">Not enough data yet</div>'; return; }
+
+  const W = 1000, H = 260, PAD = { t:10, r:14, b:22, l:52 };
+  const log = !!opts.log;
+  const vals = pts.flatMap(p => [p[sKey], p[gKey]]).filter(v => v != null && (!log || v > 0));
+  let vmin = Math.min(...vals), vmax = Math.max(...vals);
+  if (log) { vmin = Math.log10(vmin); vmax = Math.log10(vmax); }
+  if (vmin === vmax) { vmin -= 1; vmax += 1; }
+  const vpad = (vmax - vmin) * 0.08;
+  vmin -= vpad; vmax += vpad;
+
+  const x = i => PAD.l + (i / (pts.length - 1)) * (W - PAD.l - PAD.r);
+  const y = v => {
+    const vv = log ? Math.log10(v) : v;
+    return H - PAD.b - ((vv - vmin) / (vmax - vmin)) * (H - PAD.t - PAD.b);
+  };
+
+  const pathFor = key => {
+    let d = '', started = false;
+    pts.forEach((p, i) => {
+      const v = p[key];
+      if (v == null || (log && v <= 0)) { started = false; return; }
+      d += (started ? ' L ' : ' M ') + x(i).toFixed(2) + ' ' + y(v).toFixed(2);
+      started = true;
+    });
+    return d.trim();
+  };
+
+  const nTicks = 4;
+  const gridlines = [];
+  for (let i = 0; i <= nTicks; i++) {
+    const vv = vmin + (vmax - vmin) * (i / nTicks);
+    const real = log ? Math.pow(10, vv) : vv;
+    const yy = H - PAD.b - (i / nTicks) * (H - PAD.t - PAD.b);
+    gridlines.push(`<line class="gridline" x1="${PAD.l}" x2="${W-PAD.r}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/>`
+      + `<text class="axislabel" x="${PAD.l-6}" y="${(yy+3).toFixed(1)}" text-anchor="end">${opts.fmt(real)}</text>`);
+  }
+  const xTickIdx = [0, Math.floor((pts.length-1)/2), pts.length-1];
+  const xlabels = xTickIdx.map(i => `<text class="axislabel" x="${x(i).toFixed(1)}" y="${H-4}" text-anchor="middle">${fmtDate(pts[i].date)}</text>`).join('');
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      ${gridlines.join('')}
+      <path class="lineS" d="${pathFor(sKey)}"/>
+      <path class="lineG" d="${pathFor(gKey)}"/>
+      ${xlabels}
+      <line class="hoverline" id="${containerId}-hl" x1="0" x2="0" y1="${PAD.t}" y2="${H-PAD.b}" style="display:none"/>
+      <circle class="hoverdot s" id="${containerId}-hs" r="3.5" style="display:none"/>
+      <circle class="hoverdot g" id="${containerId}-hg" r="3.5" style="display:none"/>
+      <rect id="${containerId}-hitbox" x="${PAD.l}" y="0" width="${W-PAD.l-PAD.r}" height="${H}" fill="transparent"/>
+    </svg>
+    <div class="tooltip" id="${containerId}-tt"></div>
+  `;
+
+  const svg = container.querySelector('svg');
+  const hitbox = document.getElementById(`${containerId}-hitbox`);
+  const hl = document.getElementById(`${containerId}-hl`);
+  const hs = document.getElementById(`${containerId}-hs`);
+  const hg = document.getElementById(`${containerId}-hg`);
+  const tt = document.getElementById(`${containerId}-tt`);
+
+  hitbox.addEventListener('mousemove', e => {
+    const rect = svg.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width * W;
+    let idx = 0, best = Infinity;
+    pts.forEach((p, i) => { const d = Math.abs(x(i) - px); if (d < best) { best = d; idx = i; } });
+    const p = pts[idx];
+    hl.style.display = ''; hl.setAttribute('x1', x(idx)); hl.setAttribute('x2', x(idx));
+    if (p[sKey] != null) { hs.style.display = ''; hs.setAttribute('cx', x(idx)); hs.setAttribute('cy', y(p[sKey])); } else hs.style.display = 'none';
+    if (p[gKey] != null) { hg.style.display = ''; hg.setAttribute('cx', x(idx)); hg.setAttribute('cy', y(p[gKey])); } else hg.style.display = 'none';
+    tt.innerHTML = `<div class="tt-date">${fmtDate(p.date)}</div>`
+      + (p[sKey] != null ? `<div>Silver <b>${opts.fmt(p[sKey])}</b></div>` : '')
+      + (p[gKey] != null ? `<div>Gold <b>${opts.fmt(p[gKey])}</b></div>` : '');
+    tt.classList.add('show');
+    const leftPct = (x(idx) / W) * 100;
+    tt.style.left = leftPct + '%'; tt.style.top = (y(p[sKey] ?? p[gKey]) / H * 100) + '%';
+  });
+  hitbox.addEventListener('mouseleave', () => { hl.style.display='none'; hs.style.display='none'; hg.style.display='none'; tt.classList.remove('show'); });
+}
+
+async function load() {
+  try {
+    const res = await fetch('data/ring_aggregate.json?_=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const agg = await res.json();
+    document.getElementById('srcDot').className = 'dot';
+    document.getElementById('srcText').innerHTML = `<b>Live digest</b> · supply as of ${fmtDate(agg.current.supplyAsOf)} · price as of ${fmtDate(agg.current.priceAsOf)}`;
+    document.getElementById('genAt').textContent = 'Digest generated ' + new Date(agg.generatedAt).toLocaleString('en-US', { timeZone:'America/New_York', dateStyle:'medium', timeStyle:'short' }) + ' ET';
+    renderTiles(agg);
+    drawChart('supplyChart', agg.supplySeries, 'silverSupply', 'goldSupply', { log:false, fmt: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : String(Math.round(v)) });
+    drawChart('priceChart', agg.priceSeries, 'silverPriceEth', 'goldPriceEth', { log:true, fmt: v => v.toFixed(v < 0.001 ? 6 : 4) });
+  } catch (e) {
+    document.getElementById('srcDot').className = 'dot err';
+    document.getElementById('srcText').innerHTML = `<b>Failed to load</b> — ${e.message}`;
+    document.getElementById('tiles').innerHTML = '';
+    document.getElementById('supplyChart').innerHTML = '<div class="empty">Couldn\'t load data.</div>';
+    document.getElementById('priceChart').innerHTML = '<div class="empty">Couldn\'t load data.</div>';
+  }
+}
+load();
+</script>
+</body>
+</html>
