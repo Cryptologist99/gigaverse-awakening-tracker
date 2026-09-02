@@ -6,7 +6,7 @@
 <title>Ring Supply &amp; Price</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
-<meta name="description" content="Aggregate silver and gold Gigaverse ring supply and trade price, tracked daily.">
+<meta name="description" content="Aggregate silver and gold Gigaverse ring supply and floor price, tracked daily.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap">
@@ -88,14 +88,28 @@
   .tl .v { font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:0; line-height:1; }
   .tl .d { font-size:.76rem; margin:6px 0 0; font-variant-numeric:tabular-nums; color:var(--ink-faint); }
 
-  .panel { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:18px 20px 12px; margin-bottom:18px; }
-  .panel-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
-  .panel-title { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1.05rem; letter-spacing:-.01em; margin:0; }
-  .panel-note { font-size:.78rem; color:var(--ink-faint); margin:0 0 10px; }
-  .legend { display:flex; gap:14px; font-size:.8rem; color:var(--ink-soft); }
-  .legend span { display:inline-flex; align-items:center; gap:6px; }
-  .legend .sw { width:10px; height:3px; border-radius:2px; display:inline-block; }
-  .legend .sw.s { background:var(--silver); } .legend .sw.g { background:var(--gold); }
+  .rangebar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 22px; }
+  .rangechips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { font-family:"IBM Plex Mono",monospace; font-size:.78rem; font-weight:600; color:var(--ink-soft);
+    background:var(--surface); border:1px solid var(--line-strong); border-radius:999px; padding:6px 14px; cursor:pointer;
+    transition:background .15s,color .15s,border-color .15s; }
+  .chip:hover { background:var(--surface-2); }
+  .chip.active { background:var(--gold-bg); color:var(--gold); border-color:color-mix(in oklab,var(--gold) 40%,transparent); }
+  .rangecustom { display:flex; align-items:center; gap:7px; font-size:.82rem; color:var(--ink-faint); }
+  .rangecustom input[type=date] { font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--ink);
+    background:var(--surface); border:1px solid var(--line-strong); border-radius:8px; padding:5px 8px; color-scheme:light dark; }
+
+  .group { margin-bottom:26px; }
+  .group-title { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1.1rem; letter-spacing:-.01em; margin:0 0 4px; }
+  .group-note { font-size:.8rem; color:var(--ink-faint); margin:0 0 12px; max-width:74ch; }
+  .chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:820px) { .chart-grid { grid-template-columns:1fr; } }
+
+  .panel { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:15px 17px 10px; }
+  .panel-head { display:flex; align-items:center; gap:7px; margin-bottom:8px; }
+  .panel-title { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:.88rem; letter-spacing:-.01em; margin:0; display:flex; align-items:center; gap:7px; }
+  .panel-title .sw { width:9px; height:9px; border-radius:50%; flex:none; }
+  .panel-title .sw.s { background:var(--silver); } .panel-title .sw.g { background:var(--gold); }
 
   .chartwrap { position:relative; }
   .chartwrap svg { width:100%; height:auto; display:block; overflow:visible; }
@@ -107,13 +121,13 @@
   .hoverdot { fill:var(--bg); stroke-width:2; }
   .hoverdot.s { stroke:var(--silver); } .hoverdot.g { stroke:var(--gold); }
   .tooltip { position:absolute; pointer-events:none; background:var(--surface-2); border:1px solid var(--line-strong);
-    border-radius:8px; padding:7px 10px; font-size:.76rem; color:var(--ink-soft); box-shadow:var(--shadow); white-space:nowrap;
+    border-radius:8px; padding:6px 9px; font-size:.75rem; color:var(--ink-soft); box-shadow:var(--shadow); white-space:nowrap;
     transform:translate(-50%,-115%); opacity:0; transition:opacity .1s; }
   .tooltip.show { opacity:1; }
   .tooltip b { color:var(--ink); font-family:"IBM Plex Mono",monospace; }
-  .tooltip .tt-date { color:var(--ink-faint); font-family:"IBM Plex Mono",monospace; font-size:.72rem; margin-bottom:3px; }
+  .tooltip .tt-date { color:var(--ink-faint); font-family:"IBM Plex Mono",monospace; font-size:.7rem; margin-bottom:3px; }
 
-  .empty { padding:26px 14px; text-align:center; color:var(--ink-faint); }
+  .empty { padding:26px 14px; text-align:center; color:var(--ink-faint); font-size:.85rem; }
 
   footer { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
   footer a { color:var(--gold); text-decoration:none; }
@@ -142,37 +156,67 @@
     <h1>Ring Supply &amp; Price</h1>
     <p class="lede">Aggregate <b>silver</b> (7 rings) and <b>gold</b> (7 rings) supply and floor price, tracked daily from
       <a href="https://giga.market/supply" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;">giga.market</a>'s
-      live order book. Floor tiles show each tier's average lowest ask, in ETH and USD.</p>
+      live order book. Tiles always show the latest snapshot; use the range below to zoom the charts.</p>
   </header>
 
   <div class="topline" id="tiles"></div>
 
-  <div class="panel">
-    <div class="panel-head">
-      <h2 class="panel-title">Total supply</h2>
-      <div class="legend"><span><i class="sw s"></i>Silver</span><span><i class="sw g"></i>Gold</span></div>
+  <div class="rangebar">
+    <div class="rangechips" id="rangechips">
+      <button type="button" class="chip" data-range="awakening">Awakening</button>
+      <button type="button" class="chip" data-range="30d">30D</button>
+      <button type="button" class="chip" data-range="90d">90D</button>
+      <button type="button" class="chip" data-range="all">All</button>
     </div>
-    <p class="panel-note">Combined item count across all 7 rings in each tier.</p>
-    <div class="chartwrap" id="supplyChart"><div class="empty">Loading…</div></div>
+    <div class="rangecustom">
+      <input type="date" id="rangeFrom"> <span>–</span> <input type="date" id="rangeTo">
+    </div>
   </div>
 
-  <div class="panel">
-    <div class="panel-head">
-      <h2 class="panel-title">Floor price (ETH)</h2>
-      <div class="legend"><span><i class="sw s"></i>Silver</span><span><i class="sw g"></i>Gold</span></div>
+  <section class="group">
+    <h2 class="group-title">Total supply</h2>
+    <p class="group-note">Combined item count across all 7 rings in each tier.</p>
+    <div class="chart-grid">
+      <div class="panel">
+        <div class="panel-head"><h3 class="panel-title"><i class="sw s"></i>Silver</h3></div>
+        <div class="chartwrap" id="supplyChartS"><div class="empty">Loading…</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 class="panel-title"><i class="sw g"></i>Gold</h3></div>
+        <div class="chartwrap" id="supplyChartG"><div class="empty">Loading…</div></div>
+      </div>
     </div>
-    <p class="panel-note">Average lowest ask across each tier's 7 rings, snapshotted daily. giga.market has no floor-price history API, so this series only starts accumulating from when tracking began — it'll fill in day by day. Hover for USD.</p>
-    <div class="chartwrap" id="floorChart"><div class="empty">Loading…</div></div>
-  </div>
+  </section>
 
-  <div class="panel">
-    <div class="panel-head">
-      <h2 class="panel-title">Historical trade price (7-day avg, ETH)</h2>
-      <div class="legend"><span><i class="sw s"></i>Silver</span><span><i class="sw g"></i>Gold</span></div>
+  <section class="group">
+    <h2 class="group-title">Floor price (ETH, log scale)</h2>
+    <p class="group-note">Average lowest ask across each tier's 7 rings, snapshotted daily. giga.market has no floor-price history API, so this only starts accumulating from when tracking began — it fills in day by day. Hover for USD.</p>
+    <div class="chart-grid">
+      <div class="panel">
+        <div class="panel-head"><h3 class="panel-title"><i class="sw s"></i>Silver</h3></div>
+        <div class="chartwrap" id="floorChartS"><div class="empty">Loading…</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 class="panel-title"><i class="sw g"></i>Gold</h3></div>
+        <div class="chartwrap" id="floorChartG"><div class="empty">Loading…</div></div>
+      </div>
     </div>
-    <p class="panel-note">Log scale. Predates floor tracking — a proxy (ETH spent ÷ items sold, trailing 7 days) reconstructed from trade volume back to each ring's launch, not a live ask.</p>
-    <div class="chartwrap" id="priceChart"><div class="empty">Loading…</div></div>
-  </div>
+  </section>
+
+  <section class="group">
+    <h2 class="group-title">Historical trade price (7-day avg, ETH, log scale)</h2>
+    <p class="group-note">Predates floor tracking — a proxy (ETH spent ÷ items sold, trailing 7 days) reconstructed from trade volume back to each ring's launch, not a live ask. USD uses that same day's actual ETH rate where available.</p>
+    <div class="chart-grid">
+      <div class="panel">
+        <div class="panel-head"><h3 class="panel-title"><i class="sw s"></i>Silver</h3></div>
+        <div class="chartwrap" id="priceChartS"><div class="empty">Loading…</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 class="panel-title"><i class="sw g"></i>Gold</h3></div>
+        <div class="chartwrap" id="priceChartG"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+  </section>
 
   <footer>
     <span>Snapshots run twice daily on an always-on tracker. Source data on
@@ -184,9 +228,17 @@
 <script>
 const fmtInt = n => n == null ? '—' : n.toLocaleString('en-US');
 const fmtEth = n => n == null ? '—' : n < 0.001 ? n.toFixed(6) : n.toFixed(4);
-const fmtDate = s => { const d = new Date(s + 'T00:00:00Z'); return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', timeZone:'UTC' }); };
-
 const fmtUsd = n => n == null ? '—' : n < 0.01 ? '$' + n.toFixed(4) : '$' + n.toFixed(2);
+const fmtDate = s => { const d = new Date(s + 'T00:00:00Z'); return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', timeZone:'UTC' }); };
+const intAxis = v => v >= 1000 ? (v/1000).toFixed(0)+'k' : String(Math.round(v));
+const ethAxis = v => v.toFixed(v < 0.001 ? 6 : 4);
+
+// The event's tracked window (matches index.html / calculator.html EVENT_END).
+const AWAKENING_START = '2026-08-28';
+const AWAKENING_END = '2026-10-09';
+
+let RAW = null;
+let RANGE = { from: null, to: null };
 
 function renderTiles(agg) {
   const c = agg.current;
@@ -199,15 +251,15 @@ function renderTiles(agg) {
   `;
 }
 
-// Minimal dependency-free line chart: two series (s/g), optional log y-scale, hover tooltip.
-function drawChart(containerId, series, sKey, gKey, opts) {
+// Minimal dependency-free single-series line chart: optional log y-scale, hover tooltip (ETH + USD).
+function drawChart(containerId, series, key, usdKey, opts) {
   const container = document.getElementById(containerId);
-  const pts = series.filter(p => p[sKey] != null || p[gKey] != null);
-  if (pts.length < 2) { container.innerHTML = '<div class="empty">Not enough data yet</div>'; return; }
+  const pts = (series || []).filter(p => p[key] != null);
+  if (pts.length < 2) { container.innerHTML = `<div class="empty">${opts.emptyMsg || 'Not enough data in this range'}</div>`; return; }
 
-  const W = 1000, H = 260, PAD = { t:10, r:14, b:22, l:52 };
+  const W = 1000, H = 220, PAD = { t:10, r:12, b:22, l:50 };
   const log = !!opts.log;
-  const vals = pts.flatMap(p => [p[sKey], p[gKey]]).filter(v => v != null && (!log || v > 0));
+  const vals = pts.map(p => p[key]).filter(v => !log || v > 0);
   let vmin = Math.min(...vals), vmax = Math.max(...vals);
   if (log) { vmin = Math.log10(vmin); vmax = Math.log10(vmax); }
   if (vmin === vmax) { vmin -= 1; vmax += 1; }
@@ -220,19 +272,15 @@ function drawChart(containerId, series, sKey, gKey, opts) {
     return H - PAD.b - ((vv - vmin) / (vmax - vmin)) * (H - PAD.t - PAD.b);
   };
 
-  const pathFor = key => {
-    let d = '', started = false;
-    pts.forEach((p, i) => {
-      const v = p[key];
-      if (v == null || (log && v <= 0)) { started = false; return; }
-      d += (started ? ' L ' : ' M ') + x(i).toFixed(2) + ' ' + y(v).toFixed(2);
-      started = true;
-    });
-    return d.trim();
-  };
+  let d = '', started = false;
+  pts.forEach((p, i) => {
+    const v = p[key];
+    if (v == null || (log && v <= 0)) { started = false; return; }
+    d += (started ? ' L ' : ' M ') + x(i).toFixed(2) + ' ' + y(v).toFixed(2);
+    started = true;
+  });
 
-  const nTicks = 4;
-  const gridlines = [];
+  const nTicks = 4, gridlines = [];
   for (let i = 0; i <= nTicks; i++) {
     const vv = vmin + (vmax - vmin) * (i / nTicks);
     const real = log ? Math.pow(10, vv) : vv;
@@ -243,15 +291,16 @@ function drawChart(containerId, series, sKey, gKey, opts) {
   const xTickIdx = [0, Math.floor((pts.length-1)/2), pts.length-1];
   const xlabels = xTickIdx.map(i => `<text class="axislabel" x="${x(i).toFixed(1)}" y="${H-4}" text-anchor="middle">${fmtDate(pts[i].date)}</text>`).join('');
 
+  const lineClass = opts.color === 'g' ? 'lineG' : 'lineS';
+  const dotClass = opts.color === 'g' ? 'g' : 's';
+
   container.innerHTML = `
     <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
       ${gridlines.join('')}
-      <path class="lineS" d="${pathFor(sKey)}"/>
-      <path class="lineG" d="${pathFor(gKey)}"/>
+      <path class="${lineClass}" d="${d}"/>
       ${xlabels}
       <line class="hoverline" id="${containerId}-hl" x1="0" x2="0" y1="${PAD.t}" y2="${H-PAD.b}" style="display:none"/>
-      <circle class="hoverdot s" id="${containerId}-hs" r="3.5" style="display:none"/>
-      <circle class="hoverdot g" id="${containerId}-hg" r="3.5" style="display:none"/>
+      <circle class="hoverdot ${dotClass}" id="${containerId}-hd" r="3.5" style="display:none"/>
       <rect id="${containerId}-hitbox" x="${PAD.l}" y="0" width="${W-PAD.l-PAD.r}" height="${H}" fill="transparent"/>
     </svg>
     <div class="tooltip" id="${containerId}-tt"></div>
@@ -260,49 +309,102 @@ function drawChart(containerId, series, sKey, gKey, opts) {
   const svg = container.querySelector('svg');
   const hitbox = document.getElementById(`${containerId}-hitbox`);
   const hl = document.getElementById(`${containerId}-hl`);
-  const hs = document.getElementById(`${containerId}-hs`);
-  const hg = document.getElementById(`${containerId}-hg`);
+  const hd = document.getElementById(`${containerId}-hd`);
   const tt = document.getElementById(`${containerId}-tt`);
 
   hitbox.addEventListener('mousemove', e => {
     const rect = svg.getBoundingClientRect();
     const px = (e.clientX - rect.left) / rect.width * W;
     let idx = 0, best = Infinity;
-    pts.forEach((p, i) => { const d = Math.abs(x(i) - px); if (d < best) { best = d; idx = i; } });
+    pts.forEach((p, i) => { const dd = Math.abs(x(i) - px); if (dd < best) { best = dd; idx = i; } });
     const p = pts[idx];
     hl.style.display = ''; hl.setAttribute('x1', x(idx)); hl.setAttribute('x2', x(idx));
-    if (p[sKey] != null) { hs.style.display = ''; hs.setAttribute('cx', x(idx)); hs.setAttribute('cy', y(p[sKey])); } else hs.style.display = 'none';
-    if (p[gKey] != null) { hg.style.display = ''; hg.setAttribute('cx', x(idx)); hg.setAttribute('cy', y(p[gKey])); } else hg.style.display = 'none';
-    const usdFor = key => opts.usdKeys ? p[opts.usdKeys[key === sKey ? 0 : 1]] : null;
-    tt.innerHTML = `<div class="tt-date">${fmtDate(p.date)}</div>`
-      + (p[sKey] != null ? `<div>Silver <b>${opts.fmt(p[sKey])}</b>${usdFor(sKey) != null ? ' · ' + fmtUsd(usdFor(sKey)) : ''}</div>` : '')
-      + (p[gKey] != null ? `<div>Gold <b>${opts.fmt(p[gKey])}</b>${usdFor(gKey) != null ? ' · ' + fmtUsd(usdFor(gKey)) : ''}</div>` : '');
+    hd.style.display = ''; hd.setAttribute('cx', x(idx)); hd.setAttribute('cy', y(p[key]));
+    const usdVal = usdKey ? p[usdKey] : null;
+    tt.innerHTML = `<div class="tt-date">${fmtDate(p.date)}</div><div><b>${opts.fmt(p[key])}</b>${usdVal != null ? ' · ' + fmtUsd(usdVal) : ''}</div>`;
     tt.classList.add('show');
-    const leftPct = (x(idx) / W) * 100;
-    tt.style.left = leftPct + '%'; tt.style.top = (y(p[sKey] ?? p[gKey]) / H * 100) + '%';
+    tt.style.left = (x(idx) / W * 100) + '%'; tt.style.top = (y(p[key]) / H * 100) + '%';
   });
-  hitbox.addEventListener('mouseleave', () => { hl.style.display='none'; hs.style.display='none'; hg.style.display='none'; tt.classList.remove('show'); });
+  hitbox.addEventListener('mouseleave', () => { hl.style.display='none'; hd.style.display='none'; tt.classList.remove('show'); });
+}
+
+function filterSeries(series, range) {
+  if (!series) return [];
+  if (!range.from && !range.to) return series;
+  return series.filter(p => (!range.from || p.date >= range.from) && (!range.to || p.date <= range.to));
+}
+
+function renderAllCharts() {
+  if (!RAW) return;
+  const r = RANGE;
+  drawChart('supplyChartS', filterSeries(RAW.supplySeries, r), 'silverSupply', null, { log:false, fmt:intAxis, color:'s' });
+  drawChart('supplyChartG', filterSeries(RAW.supplySeries, r), 'goldSupply', null, { log:false, fmt:intAxis, color:'g' });
+  drawChart('floorChartS', filterSeries(RAW.floorSeries, r), 'silverFloorEth', 'silverFloorUsd', { log:true, fmt:ethAxis, color:'s', emptyMsg:'Collecting daily floor snapshots — check back soon' });
+  drawChart('floorChartG', filterSeries(RAW.floorSeries, r), 'goldFloorEth', 'goldFloorUsd', { log:true, fmt:ethAxis, color:'g', emptyMsg:'Collecting daily floor snapshots — check back soon' });
+  drawChart('priceChartS', filterSeries(RAW.tradePriceSeries, r), 'silverPriceEth', 'silverPriceUsd', { log:true, fmt:ethAxis, color:'s' });
+  drawChart('priceChartG', filterSeries(RAW.tradePriceSeries, r), 'goldPriceEth', 'goldPriceUsd', { log:true, fmt:ethAxis, color:'g' });
+}
+
+function computeRange(preset) {
+  if (preset === 'awakening') return { from: AWAKENING_START, to: AWAKENING_END };
+  if (preset === 'all') return { from: null, to: null };
+  const days = preset === '30d' ? 30 : 90;
+  const to = new Date();
+  const from = new Date(to.getTime() - days * 86400000);
+  return { from: from.toISOString().slice(0,10), to: to.toISOString().slice(0,10) };
+}
+
+function setPreset(preset) {
+  RANGE = computeRange(preset);
+  document.querySelectorAll('.chip[data-range]').forEach(b => b.classList.toggle('active', b.dataset.range === preset));
+  const fromEl = document.getElementById('rangeFrom'), toEl = document.getElementById('rangeTo');
+  fromEl.value = RANGE.from || fromEl.min;
+  toEl.value = RANGE.to || toEl.max;
+  renderAllCharts();
+}
+
+function applyCustomRange() {
+  document.querySelectorAll('.chip[data-range]').forEach(b => b.classList.remove('active'));
+  const from = document.getElementById('rangeFrom').value;
+  const to = document.getElementById('rangeTo').value;
+  RANGE = { from: from || null, to: to || null };
+  renderAllCharts();
+}
+
+function setupRangeControls() {
+  const allDates = [
+    ...(RAW.supplySeries || []).map(p => p.date),
+    ...(RAW.tradePriceSeries || []).map(p => p.date),
+    ...(RAW.floorSeries || []).map(p => p.date),
+  ].sort();
+  const fromEl = document.getElementById('rangeFrom'), toEl = document.getElementById('rangeTo');
+  if (allDates.length) {
+    fromEl.min = toEl.min = allDates[0];
+    fromEl.max = toEl.max = allDates[allDates.length - 1];
+  }
+  document.querySelectorAll('.chip[data-range]').forEach(btn => btn.addEventListener('click', () => setPreset(btn.dataset.range)));
+  fromEl.addEventListener('change', applyCustomRange);
+  toEl.addEventListener('change', applyCustomRange);
+  setPreset('awakening');
 }
 
 async function load() {
   try {
     const res = await fetch('data/ring_aggregate.json?_=' + Date.now());
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const agg = await res.json();
+    RAW = await res.json();
     document.getElementById('srcDot').className = 'dot';
-    document.getElementById('srcText').innerHTML = `<b>Live digest</b> · supply as of ${fmtDate(agg.current.supplyAsOf)} · floor as of ${fmtDate(agg.current.floorAsOf)}`;
-    document.getElementById('genAt').textContent = 'Digest generated ' + new Date(agg.generatedAt).toLocaleString('en-US', { timeZone:'America/New_York', dateStyle:'medium', timeStyle:'short' }) + ' ET · ETH/USD ' + fmtUsd(agg.ethUsdRate);
-    renderTiles(agg);
-    drawChart('supplyChart', agg.supplySeries, 'silverSupply', 'goldSupply', { log:false, fmt: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : String(Math.round(v)) });
-    drawChart('floorChart', agg.floorSeries, 'silverFloorEth', 'goldFloorEth', { log:true, fmt: v => v.toFixed(v < 0.001 ? 6 : 4), usdKeys: ['silverFloorUsd', 'goldFloorUsd'] });
-    drawChart('priceChart', agg.tradePriceSeries, 'silverPriceEth', 'goldPriceEth', { log:true, fmt: v => v.toFixed(v < 0.001 ? 6 : 4), usdKeys: ['silverPriceUsd', 'goldPriceUsd'] });
+    document.getElementById('srcText').innerHTML = `<b>Live digest</b> · supply as of ${fmtDate(RAW.current.supplyAsOf)} · floor as of ${fmtDate(RAW.current.floorAsOf)}`;
+    document.getElementById('genAt').textContent = 'Digest generated ' + new Date(RAW.generatedAt).toLocaleString('en-US', { timeZone:'America/New_York', dateStyle:'medium', timeStyle:'short' }) + ' ET · ETH/USD ' + fmtUsd(RAW.ethUsdRate);
+    renderTiles(RAW);
+    setupRangeControls();
   } catch (e) {
     document.getElementById('srcDot').className = 'dot err';
     document.getElementById('srcText').innerHTML = `<b>Failed to load</b> — ${e.message}`;
     document.getElementById('tiles').innerHTML = '';
-    document.getElementById('supplyChart').innerHTML = '<div class="empty">Couldn\'t load data.</div>';
-    document.getElementById('floorChart').innerHTML = '<div class="empty">Couldn\'t load data.</div>';
-    document.getElementById('priceChart').innerHTML = '<div class="empty">Couldn\'t load data.</div>';
+    ['supplyChartS','supplyChartG','floorChartS','floorChartG','priceChartS','priceChartG'].forEach(id => {
+      document.getElementById(id).innerHTML = '<div class="empty">Couldn\'t load data.</div>';
+    });
   }
 }
 load();
