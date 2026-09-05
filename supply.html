@@ -376,15 +376,26 @@ function setupRangeControls() {
     fromEl.min = toEl.min = allDates[0];
     fromEl.max = toEl.max = allDates[allDates.length - 1];
   }
-  document.querySelectorAll('.chip[data-range]').forEach(btn => btn.addEventListener('click', () => setPreset(btn.dataset.range)));
-  fromEl.addEventListener('change', applyCustomRange);
-  toEl.addEventListener('change', applyCustomRange);
-  setPreset('awakening');
+  if (!controlsInit) {
+    document.querySelectorAll('.chip[data-range]').forEach(btn => btn.addEventListener('click', () => setPreset(btn.dataset.range)));
+    fromEl.addEventListener('change', applyCustomRange);
+    toEl.addEventListener('change', applyCustomRange);
+    setPreset('awakening');
+    controlsInit = true;
+  } else {
+    // Refresh (tab regained focus, etc): keep whatever range the user had selected, just redraw with fresh data.
+    renderAllCharts();
+  }
 }
 
+let controlsInit = false;
+let loading = false;
+
 async function load() {
+  if (loading) return;
+  loading = true;
   try {
-    const res = await fetch('data/ring_aggregate.json?_=' + Date.now());
+    const res = await fetch('data/ring_aggregate.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     RAW = await res.json();
     document.getElementById('srcDot').className = 'dot';
@@ -395,13 +406,23 @@ async function load() {
   } catch (e) {
     document.getElementById('srcDot').className = 'dot err';
     document.getElementById('srcText').innerHTML = `<b>Failed to load</b> — ${e.message}`;
-    document.getElementById('tiles').innerHTML = '';
-    ['supplyChartS','supplyChartG','priceChartS','priceChartG'].forEach(id => {
-      document.getElementById(id).innerHTML = '<div class="empty">Couldn\'t load data.</div>';
-    });
+    if (!RAW) {
+      document.getElementById('tiles').innerHTML = '';
+      ['supplyChartS','supplyChartG','priceChartS','priceChartG'].forEach(id => {
+        document.getElementById(id).innerHTML = '<div class="empty">Couldn\'t load data.</div>';
+      });
+    }
+  } finally {
+    loading = false;
   }
 }
 load();
+
+// Static digest only updates twice a day, but a viewer who leaves the tab open for
+// hours (or backgrounds it on mobile, where bfcache restores the old DOM verbatim)
+// would otherwise keep looking at whatever was fetched on the original page load.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(); });
+window.addEventListener('pageshow', e => { if (e.persisted) load(); });
 </script>
 </body>
 </html>
