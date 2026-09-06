@@ -121,8 +121,6 @@
     .calc-result { flex:1 1 100%; text-align:left; border-left:none; border-top:1px dashed var(--line-strong); padding-left:0; padding-top:14px; }
   }
 
-  .compare-note { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:14px 20px; font-size:.85rem; color:var(--ink-soft); }
-  .compare-note b { color:var(--ink); }
 
   footer { margin-top:22px; padding-top:16px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
   footer a { color:var(--gold); text-decoration:none; } footer a:hover { text-decoration:underline; }
@@ -155,7 +153,7 @@
       <div class="calc-fields">
         <div class="mini-field">
           <label for="hcGained">HC gained</label>
-          <div class="mini-shell"><input type="text" id="hcGained" inputmode="numeric" value="1,000" autocomplete="off" spellcheck="false"></div>
+          <div class="mini-shell"><input type="text" id="hcGained" inputmode="numeric" value="1,300" autocomplete="off" spellcheck="false"></div>
         </div>
         <div class="mini-field">
           <label for="energyCost">Energy spent</label>
@@ -289,7 +287,7 @@
         </div>
         <div class="mini-field">
           <label for="dungeonPotionCost">Potion cost</label>
-          <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="dungeonPotionCost" class="has-prefix" inputmode="decimal" value="0.20" autocomplete="off" spellcheck="false"></div>
+          <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="dungeonPotionCost" class="has-prefix" inputmode="decimal" value="0.00" autocomplete="off" spellcheck="false"></div>
           <div class="mini-chips">
             <button type="button" class="mini-chip auto-potioncost" data-mult="0">0 Potions</button>
             <button type="button" class="mini-chip auto-potioncost" data-mult="1">1 Potion</button>
@@ -315,8 +313,6 @@
       </div>
     </section>
   </div>
-
-  <div class="compare-note">Comparing: <b>value per energy</b> across activities — Hard Cores' price/HC defaults to an estimate (or set your own pot ÷ total HC scenario); Crafting assumes a fixed 70% craft success rate, that the craft cost is spent whether or not it succeeds, and that Lil/Mid/Big Oils use the same Dust/Shard craft-cost pattern as potions (only confirmed for potions and Big Oil — flag it if Lil/Mid Oil differ). Energy costs: potions 2/4/8 (Lil/Mid/Big), oils always 2. Dungeons treats each run as an independent attempt, and potion cost as a one-time cost for the whole session (not per run) — so value/energy does scale with run count, since more runs spreads that one-time cost over more energy. More comparisons coming.</div>
 
   <footer>
     <span>Part of the <a href="index.html">Gigaverse Awakening Tracker</a>.</span>
@@ -436,37 +432,40 @@
     }).then(function (j) { potionPricesCache = j; return j; });
   }
 
+  function fillCraftingTier(tier, type, label) {
+    var craftKey = tier === "big" ? "shard" : "dust";
+    var qty = CRAFT_QTY[tier];
+    var energy = ENERGY_BY_TIER[type === "oil" ? "oil" : "potion"][tier];
+
+    var autoBtns = document.querySelectorAll(".mini-chip.auto");
+    autoBtns.forEach(function (b) { b.disabled = true; });
+    var status = el("autofillStatus");
+    status.className = "autofill-status";
+    status.textContent = "Loading…";
+
+    return loadPotionPrices().then(function (data) {
+      var priceEntry = (type === "oil" ? data.oil : data.potion)[tier];
+      var craftEntry = data.craftCost[craftKey];
+      if (!priceEntry || priceEntry.priceUsd == null || !craftEntry || craftEntry.priceUsd == null) {
+        throw new Error("no price data for this tier");
+      }
+      pot.potionPrice.value = priceEntry.priceUsd.toFixed(2);
+      pot.materialsCost.value = (craftEntry.priceUsd * qty).toFixed(2);
+      pot.potionEnergy.value = String(energy);
+      calcPotion();
+      var genAt = new Date(data.generatedAt).toLocaleString("en-US", { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" });
+      status.textContent = "Filled from " + label + " · giga.market floors as of " + genAt + ".";
+    }).catch(function (e) {
+      status.className = "autofill-status err";
+      status.textContent = "Couldn't load price data — " + e.message + ". Enter manually instead.";
+    }).then(function () {
+      autoBtns.forEach(function (b) { b.disabled = false; });
+    });
+  }
+
   document.querySelectorAll(".mini-chip.auto").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var tier = btn.dataset.tier, type = btn.dataset.type; // type: "juice" (potion) or "oil"
-      var craftKey = tier === "big" ? "shard" : "dust";
-      var qty = CRAFT_QTY[tier];
-      var energy = ENERGY_BY_TIER[type === "oil" ? "oil" : "potion"][tier];
-
-      var autoBtns = document.querySelectorAll(".mini-chip.auto");
-      autoBtns.forEach(function (b) { b.disabled = true; });
-      var status = el("autofillStatus");
-      status.className = "autofill-status";
-      status.textContent = "Loading…";
-
-      loadPotionPrices().then(function (data) {
-        var priceEntry = (type === "oil" ? data.oil : data.potion)[tier];
-        var craftEntry = data.craftCost[craftKey];
-        if (!priceEntry || priceEntry.priceUsd == null || !craftEntry || craftEntry.priceUsd == null) {
-          throw new Error("no price data for this tier");
-        }
-        pot.potionPrice.value = priceEntry.priceUsd.toFixed(4);
-        pot.materialsCost.value = (craftEntry.priceUsd * qty).toFixed(4);
-        pot.potionEnergy.value = String(energy);
-        calcPotion();
-        var genAt = new Date(data.generatedAt).toLocaleString("en-US", { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" });
-        status.textContent = "Filled from " + btn.textContent + " · giga.market floors as of " + genAt + ".";
-      }).catch(function (e) {
-        status.className = "autofill-status err";
-        status.textContent = "Couldn't load price data — " + e.message + ". Enter manually instead.";
-      }).then(function () {
-        autoBtns.forEach(function (b) { b.disabled = false; });
-      });
+      fillCraftingTier(btn.dataset.tier, btn.dataset.type, btn.textContent);
     });
   });
 
@@ -491,24 +490,23 @@
       return r.json();
     }).then(function (j) { ringPricesCache = j; return j; });
   }
-  document.querySelectorAll(".mini-chip.auto-ring").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var tier = btn.dataset.tier; // "silver" or "gold"
-      var autoBtns = document.querySelectorAll(".mini-chip.auto-ring");
-      autoBtns.forEach(function (b) { b.disabled = true; });
-      var original = btn.textContent;
-      loadRingPrices().then(function (data) {
-        var entry = data.current && data.current[tier];
-        if (!entry || entry.floorUsd == null) throw new Error("no floor data");
-        dun.ringPrice.value = entry.floorUsd.toFixed(4);
-        calcDungeon();
-      }).catch(function () {
-        btn.textContent = "Failed";
-        setTimeout(function () { btn.textContent = original; }, 2000);
-      }).then(function () {
-        autoBtns.forEach(function (b) { b.disabled = false; });
-      });
+  function fillRingPrice(tier, btn) {
+    var autoBtns = document.querySelectorAll(".mini-chip.auto-ring");
+    autoBtns.forEach(function (b) { b.disabled = true; });
+    var original = btn && btn.textContent;
+    return loadRingPrices().then(function (data) {
+      var entry = data.current && data.current[tier];
+      if (!entry || entry.floorUsd == null) throw new Error("no floor data");
+      dun.ringPrice.value = entry.floorUsd.toFixed(2);
+      calcDungeon();
+    }).catch(function () {
+      if (btn) { btn.textContent = "Failed"; setTimeout(function () { btn.textContent = original; }, 2000); }
+    }).then(function () {
+      autoBtns.forEach(function (b) { b.disabled = false; });
     });
+  }
+  document.querySelectorAll(".mini-chip.auto-ring").forEach(function (btn) {
+    btn.addEventListener("click", function () { fillRingPrice(btn.dataset.tier, btn); });
   });
 
   // Dungeon "potion cost" presets: average potion price across Lil/Mid/Big (same digest as Crafting's
@@ -523,7 +521,7 @@
         var tiers = ["lil", "mid", "big"].map(function (t) { return data.potion[t]; }).filter(function (t) { return t && t.priceUsd != null; });
         if (!tiers.length) throw new Error("no potion price data");
         var avg = tiers.reduce(function (s, t) { return s + t.priceUsd; }, 0) / tiers.length;
-        dun.dungeonPotionCost.value = (avg * mult).toFixed(4);
+        dun.dungeonPotionCost.value = (avg * mult).toFixed(2);
         calcDungeon();
       }).catch(function () {
         btn.textContent = "Failed";
@@ -537,6 +535,10 @@
   calcHC();
   calcPotion();
   calcDungeon();
+
+  // Defaults: Crafting starts from Big Potion (live), Dungeons' ring price starts from Avg Gold (live).
+  fillCraftingTier("big", "juice", "Big Potion");
+  fillRingPrice("gold", null);
 })();
 </script>
 </body>
