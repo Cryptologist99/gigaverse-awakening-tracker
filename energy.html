@@ -108,6 +108,14 @@
     background:linear-gradient(96deg,var(--hero-grad-a),var(--hero-grad-b)); -webkit-background-clip:text; background-clip:text; color:transparent; font-variant-numeric:tabular-nums; margin:0; }
   .calc-result .f { font-size:.7rem; color:var(--ink-faint); margin:6px 0 0; line-height:1.4; }
 
+  .result-multiplier { margin-top:12px; padding-top:12px; border-top:1px dashed var(--line-strong); }
+  .result-multiplier label { display:block; font-size:.64rem; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+  .result-multiplier input { width:100%; font-family:"IBM Plex Mono",monospace; font-size:.85rem; font-weight:500; color:var(--ink); text-align:right;
+    background:var(--surface-2); border:1.5px solid var(--line-strong); border-radius:8px; padding:6px 9px; }
+  .result-multiplier input:focus { outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in oklab,var(--focus) 28%,transparent); }
+  .result-multiplier .rm-total { margin:6px 0 0; font-size:.9rem; font-weight:700; color:var(--gold); font-family:"IBM Plex Mono",monospace; text-align:right; }
+  @media (max-width:860px) { .result-multiplier input, .result-multiplier .rm-total { text-align:left; } }
+
   @media (max-width:860px) {
     .calc-label { flex:1 1 100%; }
     .calc-result { flex:1 1 100%; text-align:left; border-left:none; border-top:1px dashed var(--line-strong); padding-left:0; padding-top:14px; }
@@ -186,6 +194,11 @@
         <p class="k">Value / energy</p>
         <p class="v" id="outPerEnergyHC">$0.0046</p>
         <p class="f" id="outFormulaHC">1,000 HC × $0.000093 ÷ 20 energy</p>
+        <div class="result-multiplier">
+          <label for="hcTotalEnergy">Energy spent</label>
+          <input type="text" id="hcTotalEnergy" inputmode="numeric" placeholder="0" autocomplete="off" spellcheck="false">
+          <p class="rm-total" id="hcTotalValue">= $0.00</p>
+        </div>
       </div>
     </section>
 
@@ -209,7 +222,7 @@
           <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="potionPrice" class="has-prefix" inputmode="decimal" value="2.00" autocomplete="off" spellcheck="false"></div>
         </div>
         <div class="mini-field">
-          <label for="potionEnergy">Energy cost</label>
+          <label for="potionEnergy">Energy spent</label>
           <div class="mini-shell"><input type="text" id="potionEnergy" inputmode="numeric" value="4" autocomplete="off" spellcheck="false"></div>
           <div class="mini-chips">
             <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="2">2</button>
@@ -232,6 +245,11 @@
         <p class="k">Value / energy</p>
         <p class="v" id="outPerEnergyPotion">$0.0000</p>
         <p class="f" id="outFormulaPotion">($2.00 − $0.50) × 70% ÷ 4</p>
+        <div class="result-multiplier">
+          <label for="potionTotalEnergy">Energy spent</label>
+          <input type="text" id="potionTotalEnergy" inputmode="numeric" placeholder="0" autocomplete="off" spellcheck="false">
+          <p class="rm-total" id="potionTotalValue">= $0.00</p>
+        </div>
       </div>
     </section>
 
@@ -273,6 +291,7 @@
           <label for="dungeonPotionCost">Potion cost</label>
           <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="dungeonPotionCost" class="has-prefix" inputmode="decimal" value="0.20" autocomplete="off" spellcheck="false"></div>
           <div class="mini-chips">
+            <button type="button" class="mini-chip auto-potioncost" data-mult="0">0 Potions</button>
             <button type="button" class="mini-chip auto-potioncost" data-mult="1">1 Potion</button>
             <button type="button" class="mini-chip auto-potioncost" data-mult="3">3 Potions</button>
           </div>
@@ -288,6 +307,11 @@
         <p class="v" id="outPerEnergyDungeon">$0.0000</p>
         <p class="f" id="outFormulaDungeon">(50% × $0.16 − $0.20) ÷ 40</p>
         <p class="f" id="outProfitDungeon">Expected profit over 1 run: $0.00</p>
+        <div class="result-multiplier">
+          <label for="dungeonTotalEnergy">Energy spent</label>
+          <input type="text" id="dungeonTotalEnergy" inputmode="numeric" placeholder="0" autocomplete="off" spellcheck="false">
+          <p class="rm-total" id="dungeonTotalValue">= $0.00</p>
+        </div>
       </div>
     </section>
   </div>
@@ -345,6 +369,7 @@
 
     el("outPerEnergyHC").textContent = usdPrecise(perEnergy);
     el("outFormulaHC").textContent = commaInt(hcGained) + " HC × " + usdPrecise(price) + " ÷ " + commaInt(energy) + " energy";
+    el("hcTotalValue").textContent = "= " + usd2(parseNum(el("hcTotalEnergy").value) * perEnergy);
   }
 
   function calcPotion() {
@@ -356,6 +381,7 @@
 
     el("outPerEnergyPotion").textContent = usdPrecise(perEnergy);
     el("outFormulaPotion").textContent = "(" + usd2(price) + " − " + usd2(materials) + ") × 70% ÷ " + commaInt(energy);
+    el("potionTotalValue").textContent = "= " + usd2(parseNum(el("potionTotalEnergy").value) * perEnergy);
   }
 
   function calcDungeon() {
@@ -373,7 +399,12 @@
     el("outPerEnergyDungeon").textContent = usdPrecise(perEnergy);
     el("outFormulaDungeon").textContent = "(" + commaInt(runs) + " × " + commaInt(clearPct) + "% × " + usd2(ringPrice) + " − " + usd2(potionCost) + ") ÷ " + commaInt(totalEnergy);
     el("outProfitDungeon").textContent = "Expected profit over " + commaInt(runs) + " run" + (runs === 1 ? "" : "s") + ": " + usd2(totalProfit);
+    el("dungeonTotalValue").textContent = "= " + usd2(parseNum(el("dungeonTotalEnergy").value) * perEnergy);
   }
+
+  el("hcTotalEnergy").addEventListener("input", calcHC);
+  el("potionTotalEnergy").addEventListener("input", calcPotion);
+  el("dungeonTotalEnergy").addEventListener("input", calcDungeon);
 
   Object.keys(hc).forEach(function (k) { hc[k].addEventListener("input", calcHC); });
   hc.hcGained.addEventListener("input", function () { liveComma(hc.hcGained); });
