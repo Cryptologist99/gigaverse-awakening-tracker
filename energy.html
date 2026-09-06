@@ -272,7 +272,7 @@
         <div class="mini-field">
           <label for="dungeonPotionCost">Potion cost</label>
           <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="dungeonPotionCost" class="has-prefix" inputmode="decimal" value="0.20" autocomplete="off" spellcheck="false"></div>
-          <p class="mini-note">Spent per run either way</p>
+          <p class="mini-note">One-time cost for the session, not per run</p>
         </div>
         <div class="mini-field">
           <label>Energy / run</label>
@@ -288,7 +288,7 @@
     </section>
   </div>
 
-  <div class="compare-note">Comparing: <b>value per energy</b> across activities — Hard Cores' price/HC defaults to an estimate (or set your own pot ÷ total HC scenario); Crafting assumes a fixed 70% craft success rate, that the craft cost is spent whether or not it succeeds, and that Lil/Mid/Big Oils use the same Dust/Shard craft-cost pattern as potions (only confirmed for potions and Big Oil — flag it if Lil/Mid Oil differ). Energy costs: potions 2/4/8 (Lil/Mid/Big), oils always 2. Dungeons treats each run as an independent attempt (potion cost spent whether or not it clears), so value/energy doesn't change with run count — "runs" only scales the expected-profit total shown below it. More comparisons coming.</div>
+  <div class="compare-note">Comparing: <b>value per energy</b> across activities — Hard Cores' price/HC defaults to an estimate (or set your own pot ÷ total HC scenario); Crafting assumes a fixed 70% craft success rate, that the craft cost is spent whether or not it succeeds, and that Lil/Mid/Big Oils use the same Dust/Shard craft-cost pattern as potions (only confirmed for potions and Big Oil — flag it if Lil/Mid Oil differ). Energy costs: potions 2/4/8 (Lil/Mid/Big), oils always 2. Dungeons treats each run as an independent attempt, and potion cost as a one-time cost for the whole session (not per run) — so value/energy does scale with run count, since more runs spreads that one-time cost over more energy. More comparisons coming.</div>
 
   <footer>
     <span>Part of the <a href="index.html">Gigaverse Awakening Tracker</a>.</span>
@@ -360,12 +360,14 @@
     var clearPct = parseNum(dun.clearRate.value);
     var potionCost = parseNum(dun.dungeonPotionCost.value);
 
-    var perRunProfit = (clearPct / 100) * ringPrice - potionCost;
-    var perEnergy = perRunProfit / DUNGEON_ENERGY_PER_RUN;
-    var totalProfit = perRunProfit * runs;
+    // Potion cost is a one-time cost for the session, not spent per run.
+    var totalEnergy = runs * DUNGEON_ENERGY_PER_RUN;
+    var expectedRingValue = runs * (clearPct / 100) * ringPrice;
+    var totalProfit = expectedRingValue - potionCost;
+    var perEnergy = totalEnergy > 0 ? totalProfit / totalEnergy : 0;
 
     el("outPerEnergyDungeon").textContent = usdPrecise(perEnergy);
-    el("outFormulaDungeon").textContent = "(" + commaInt(clearPct) + "% × " + usd2(ringPrice) + " − " + usd2(potionCost) + ") ÷ " + DUNGEON_ENERGY_PER_RUN;
+    el("outFormulaDungeon").textContent = "(" + commaInt(runs) + " × " + commaInt(clearPct) + "% × " + usd2(ringPrice) + " − " + usd2(potionCost) + ") ÷ " + commaInt(totalEnergy);
     el("outProfitDungeon").textContent = "Expected profit over " + commaInt(runs) + " run" + (runs === 1 ? "" : "s") + ": " + usd2(totalProfit);
   }
 
