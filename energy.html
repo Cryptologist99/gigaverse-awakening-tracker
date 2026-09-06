@@ -58,66 +58,55 @@
   .navlink { font-size:.88rem; font-weight:600; color:var(--ink-soft); text-decoration:none; padding:7px 13px; border-radius:9px; transition:background .15s,color .15s; }
   .navlink:hover { background:var(--surface-2); color:var(--ink); }
   .navlink.active { background:var(--gold-bg); color:var(--gold); }
-  .wrap { max-width:1080px; margin:0 auto; padding:clamp(20px,4vw,48px); }
+  .wrap { max-width:1120px; margin:0 auto; padding:clamp(18px,3.5vw,40px); }
 
-  header.masthead { margin-bottom:28px; }
-  .eyebrow { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  header.masthead { margin-bottom:20px; }
+  .eyebrow { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0 0 8px; display:flex; align-items:center; gap:8px; }
   .eyebrow::before { content:""; width:22px; height:1px; background:var(--gold); display:inline-block; }
-  h1 { font-family:"Bricolage Grotesque","Instrument Sans",sans-serif; font-weight:800; font-size:clamp(2rem,5vw,3.1rem); line-height:1.02; letter-spacing:-.02em; margin:0 0 12px; text-wrap:balance; }
-  .lede { color:var(--ink-soft); max-width:70ch; margin:0; font-size:1.02rem; }
-  .lede .disclaimer { display:inline-block; margin-top:8px; font-weight:700; letter-spacing:.05em; color:var(--gold); }
+  h1 { font-family:"Bricolage Grotesque","Instrument Sans",sans-serif; font-weight:800; font-size:clamp(1.8rem,4.2vw,2.6rem); line-height:1.05; letter-spacing:-.02em; margin:0 0 10px; text-wrap:balance; }
+  .lede { color:var(--ink-soft); max-width:74ch; margin:0; font-size:.96rem; }
+  .lede .disclaimer { display:inline-block; margin-top:6px; font-weight:700; letter-spacing:.05em; color:var(--gold); }
 
-  .grid { display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:20px; align-items:start; margin-bottom:22px; }
-  @media (max-width:820px) { .grid { grid-template-columns:1fr; } }
-  .card { background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
-  .card-pad { padding:clamp(18px,3vw,26px); }
-  .panel-title { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1.1rem; margin:0 0 2px; letter-spacing:-.01em; }
-  .panel-sub { color:var(--ink-faint); font-size:.85rem; margin:0 0 20px; }
+  .calcs { display:flex; flex-direction:column; gap:14px; margin-bottom:20px; }
+  .calc-card { background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
+    padding:18px 22px; display:flex; flex-wrap:wrap; align-items:center; gap:16px 22px; }
 
-  .field { margin-bottom:20px; } .field:last-child { margin-bottom:0; }
-  .field > label { display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-weight:600; font-size:.9rem; margin-bottom:7px; }
-  .unit { color:var(--ink-faint); font-weight:500; font-size:.78rem; letter-spacing:.04em; text-transform:uppercase; }
-  .input-shell { position:relative; display:flex; align-items:center; }
-  .prefix { position:absolute; left:14px; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace; font-size:1rem; pointer-events:none; }
-  input[type="text"] { width:100%; font-family:"IBM Plex Mono",monospace; font-size:1.05rem; font-weight:500; color:var(--ink);
-    background:var(--surface-2); border:1.5px solid var(--line-strong); border-radius:10px; padding:12px 14px; transition:border-color .15s,box-shadow .15s; }
-  input.has-prefix { padding-left:30px; }
-  input[type="text"]:hover { border-color:var(--ink-faint); }
-  input[type="text"]:focus { outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in oklab,var(--focus) 28%,transparent); }
-  .helper { margin-top:7px; font-size:.8rem; color:var(--ink-faint); display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
-  .chip { font-family:"IBM Plex Mono",monospace; font-size:.76rem; background:var(--gold-bg); color:var(--gold);
-    border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:3px 8px; border-radius:999px; cursor:pointer; font-weight:500; transition:transform .12s,background .15s; }
-  .chip:hover { transform:translateY(-1px); } .chip:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+  .calc-label { flex:0 0 150px; }
+  .calc-label h2 { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1.02rem; margin:0 0 3px; letter-spacing:-.01em; }
+  .calc-label p { margin:0; font-size:.78rem; color:var(--ink-faint); line-height:1.4; }
 
-  .subpanel { margin-top:16px; padding-top:16px; border-top:1px dashed var(--line-strong); }
-  .subpanel-title { font-size:.8rem; font-weight:600; color:var(--ink-soft); margin:0 0 14px; display:flex; align-items:center; gap:8px; }
-  .subpanel-title::before { content:"⇢"; color:var(--gold); }
-  .subgrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  @media (max-width:480px) { .subgrid { grid-template-columns:1fr; } }
-  .computed-note { margin-top:10px; font-size:.8rem; color:var(--ink-faint); }
-  .computed-note b { color:var(--gold); font-family:"IBM Plex Mono",monospace; }
+  .calc-fields { flex:1 1 460px; display:flex; flex-wrap:wrap; gap:12px 14px; align-items:flex-start; }
+  .mini-field { flex:1 1 108px; min-width:100px; }
+  .mini-field label { display:block; font-size:.66rem; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; white-space:nowrap; }
+  .mini-shell { position:relative; display:flex; align-items:center; }
+  .mini-prefix { position:absolute; left:9px; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace; font-size:.85rem; pointer-events:none; }
+  .mini-field input { width:100%; font-family:"IBM Plex Mono",monospace; font-size:.88rem; font-weight:500; color:var(--ink);
+    background:var(--surface-2); border:1.5px solid var(--line-strong); border-radius:8px; padding:8px 9px; transition:border-color .15s,box-shadow .15s; }
+  .mini-field input.has-prefix { padding-left:20px; }
+  .mini-field input:hover { border-color:var(--ink-faint); }
+  .mini-field input:focus { outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in oklab,var(--focus) 28%,transparent); }
+  .mini-chips { display:flex; gap:4px; margin-top:5px; flex-wrap:wrap; }
+  .mini-chip { font-family:"IBM Plex Mono",monospace; font-size:.66rem; background:var(--gold-bg); color:var(--gold);
+    border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:2px 6px; border-radius:999px; cursor:pointer; font-weight:500; transition:transform .12s; }
+  .mini-chip:hover { transform:translateY(-1px); }
+  .mini-note { font-size:.68rem; color:var(--ink-faint); margin-top:5px; line-height:1.35; }
+  .mini-note b { color:var(--gold); font-family:"IBM Plex Mono",monospace; }
 
-  .results { display:flex; flex-direction:column; gap:18px; }
-  .hero { background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 8%,var(--surface)) 0%,var(--surface) 60%);
-    border:1px solid color-mix(in oklab,var(--gold) 26%,var(--line)); border-radius:16px; padding:clamp(20px,3vw,28px); position:relative; overflow:hidden; }
-  .hero-label { font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; margin:0 0 6px; }
-  .payout { font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:clamp(2.6rem,8vw,4rem); line-height:1; letter-spacing:-.03em;
+  .calc-result { flex:0 0 190px; text-align:right; border-left:1px dashed var(--line-strong); padding-left:18px; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
+  .calc-result .k { font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; margin:0 0 4px; }
+  .calc-result .v { font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:1.7rem; letter-spacing:-.02em; line-height:1;
     background:linear-gradient(96deg,var(--hero-grad-a),var(--hero-grad-b)); -webkit-background-clip:text; background-clip:text; color:transparent; font-variant-numeric:tabular-nums; margin:0; }
-  .payout-sub { margin:10px 0 0; color:var(--ink-soft); font-size:.95rem; } .payout-sub b { color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
+  .calc-result .f { font-size:.7rem; color:var(--ink-faint); margin:6px 0 0; line-height:1.4; }
 
-  .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-  @media (max-width:480px) { .stats { grid-template-columns:1fr; } }
-  .stat { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:15px 16px; }
-  .stat .k { font-size:.76rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 6px; font-weight:600; }
-  .stat .v { font-family:"IBM Plex Mono",monospace; font-size:1.32rem; font-weight:600; letter-spacing:-.01em; font-variant-numeric:tabular-nums; margin:0; }
-  .stat .v.gold { color:var(--gold); } .stat .note { font-size:.76rem; color:var(--ink-faint); margin:4px 0 0; }
+  @media (max-width:860px) {
+    .calc-label { flex:1 1 100%; }
+    .calc-result { flex:1 1 100%; text-align:left; border-left:none; border-top:1px dashed var(--line-strong); padding-left:0; padding-top:14px; }
+  }
 
-  .assumption { font-size:.82rem; color:var(--ink-soft); line-height:1.55; margin:0; } .assumption b { color:var(--ink); font-weight:600; }
-
-  .compare-note { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:16px 20px; font-size:.88rem; color:var(--ink-soft); }
+  .compare-note { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:14px 20px; font-size:.85rem; color:var(--ink-soft); }
   .compare-note b { color:var(--ink); }
 
-  footer { margin-top:26px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
+  footer { margin-top:22px; padding-top:16px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
   footer a { color:var(--gold); text-decoration:none; } footer a:hover { text-decoration:underline; }
 </style>
 </head>
@@ -135,81 +124,98 @@
   <header class="masthead">
     <p class="eyebrow">Gigaverse · Economy</p>
     <h1>Energy Value Calculator</h1>
-    <p class="lede">How much is a point of energy actually worth? This compares what different in-game activities return per energy spent, so you can decide where to put yours. Starting with <b>Hard Cores</b> — more comparisons coming.
+    <p class="lede">How much is a point of energy actually worth? Compare what different in-game activities return per energy spent.
       <strong class="disclaimer">NAPKIN MATH. NOT FINANCIAL ADVICE. DYOR.</strong></p>
   </header>
 
-  <div class="grid">
-    <section class="card card-pad" aria-label="Hard Cores inputs">
-      <h2 class="panel-title">Hard Cores</h2>
-      <p class="panel-sub">How many HC a run gets you, what it cost in energy, and what an HC is worth.</p>
-
-      <div class="field">
-        <label for="hcGained">Hard Cores gained <span class="unit">HC</span></label>
-        <div class="input-shell"><input type="text" id="hcGained" inputmode="numeric" value="1,000" autocomplete="off" spellcheck="false"></div>
-        <div class="helper">How many HC that energy earned you.</div>
+  <div class="calcs">
+    <section class="calc-card" aria-label="Hard Cores">
+      <div class="calc-label">
+        <h2>Hard Cores</h2>
+        <p>HC × price ÷ energy</p>
       </div>
-
-      <div class="field">
-        <label for="energyCost">Energy spent <span class="unit">energy</span></label>
-        <div class="input-shell"><input type="text" id="energyCost" inputmode="numeric" value="20" autocomplete="off" spellcheck="false"></div>
-        <div class="helper">
-          <button type="button" class="chip" data-fill="energyCost" data-value="12">12</button>
-          <button type="button" class="chip" data-fill="energyCost" data-value="20">20</button>
-          <button type="button" class="chip" data-fill="energyCost" data-value="60">60</button>
+      <div class="calc-fields">
+        <div class="mini-field">
+          <label for="hcGained">HC gained</label>
+          <div class="mini-shell"><input type="text" id="hcGained" inputmode="numeric" value="1,000" autocomplete="off" spellcheck="false"></div>
         </div>
-      </div>
-
-      <div class="field">
-        <label for="pricePerHC">Price per HC <span class="unit">USD</span></label>
-        <div class="input-shell"><span class="prefix">$</span><input type="text" id="pricePerHC" class="has-prefix" inputmode="decimal" value="0.000093" autocomplete="off" spellcheck="false"></div>
-        <div class="helper">Defaults to an estimate. Enter your own, or calculate it from a pot below.</div>
-      </div>
-
-      <div class="subpanel">
-        <p class="subpanel-title">Or calculate price per HC from a pot</p>
-        <div class="subgrid">
-          <div class="field" style="margin-bottom:0;">
-            <label for="pot">Prize pot <span class="unit">USD</span></label>
-            <div class="input-shell"><span class="prefix">$</span><input type="text" id="pot" class="has-prefix" inputmode="numeric" value="" placeholder="0" autocomplete="off" spellcheck="false"></div>
-            <div class="helper">
-              <button type="button" class="chip" data-fill="pot" data-value="40000">40k</button>
-              <button type="button" class="chip" data-fill="pot" data-value="45000">45k</button>
-              <button type="button" class="chip" data-fill="pot" data-value="50000">50k</button>
-            </div>
-          </div>
-          <div class="field" style="margin-bottom:0;">
-            <label for="totalHC">Total HC <span class="unit">HC in play</span></label>
-            <div class="input-shell"><input type="text" id="totalHC" inputmode="numeric" value="" placeholder="0" autocomplete="off" spellcheck="false"></div>
-            <div class="helper">Fill both to overwrite price per HC.</div>
+        <div class="mini-field">
+          <label for="energyCost">Energy spent</label>
+          <div class="mini-shell"><input type="text" id="energyCost" inputmode="numeric" value="20" autocomplete="off" spellcheck="false"></div>
+          <div class="mini-chips">
+            <button type="button" class="mini-chip" data-fill="energyCost" data-value="12">12</button>
+            <button type="button" class="mini-chip" data-fill="energyCost" data-value="20">20</button>
+            <button type="button" class="mini-chip" data-fill="energyCost" data-value="60">60</button>
           </div>
         </div>
-        <p class="computed-note" id="potNote" hidden>= <b id="potNoteVal">$0.000000</b> per HC — overwriting the field above.</p>
+        <div class="mini-field">
+          <label for="pricePerHC">Price / HC</label>
+          <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="pricePerHC" class="has-prefix" inputmode="decimal" value="0.000093" autocomplete="off" spellcheck="false"></div>
+          <p class="mini-note" id="potNote" hidden>= <b id="potNoteVal">$0.000000</b> from pot÷HC →</p>
+        </div>
+        <div class="mini-field">
+          <label for="pot">Prize pot</label>
+          <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="pot" class="has-prefix" inputmode="numeric" value="" placeholder="0" autocomplete="off" spellcheck="false"></div>
+          <div class="mini-chips">
+            <button type="button" class="mini-chip" data-fill="pot" data-value="40000">40k</button>
+            <button type="button" class="mini-chip" data-fill="pot" data-value="45000">45k</button>
+            <button type="button" class="mini-chip" data-fill="pot" data-value="50000">50k</button>
+          </div>
+        </div>
+        <div class="mini-field">
+          <label for="totalHC">Total HC</label>
+          <div class="mini-shell"><input type="text" id="totalHC" inputmode="numeric" value="" placeholder="0" autocomplete="off" spellcheck="false"></div>
+          <div class="mini-chips">
+            <button type="button" class="mini-chip" data-fill="totalHC" data-value="300000000">300M</button>
+            <button type="button" class="mini-chip" data-fill="totalHC" data-value="400000000">400M</button>
+            <button type="button" class="mini-chip" data-fill="totalHC" data-value="450000000">450M</button>
+          </div>
+        </div>
+      </div>
+      <div class="calc-result">
+        <p class="k">Value / energy</p>
+        <p class="v" id="outPerEnergyHC">$0.0046</p>
+        <p class="f" id="outFormulaHC">1,000 HC × $0.000093 ÷ 20 energy</p>
       </div>
     </section>
 
-    <div class="results">
-      <div class="hero">
-        <p class="hero-label">Value per energy</p>
-        <p class="payout" id="outPerEnergy">$0.000000</p>
-        <p class="payout-sub" id="outFormula">1,000 HC × $0.000093/HC ÷ 20 energy</p>
+    <section class="calc-card" aria-label="Potion Making">
+      <div class="calc-label">
+        <h2>Potion Making</h2>
+        <p>(price − materials) × 70% ÷ energy</p>
       </div>
-
-      <div class="stats">
-        <div class="stat"><p class="k">Total value earned</p><p class="v" id="outTotalValue">$0.00</p><p class="note">HC gained × price per HC</p></div>
-        <div class="stat"><p class="k">HC per energy</p><p class="v gold" id="outHCperEnergy">0.00</p><p class="note">HC gained ÷ energy spent</p></div>
+      <div class="calc-fields">
+        <div class="mini-field">
+          <label for="potionPrice">Potion price</label>
+          <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="potionPrice" class="has-prefix" inputmode="decimal" value="2.00" autocomplete="off" spellcheck="false"></div>
+        </div>
+        <div class="mini-field">
+          <label for="potionEnergy">Energy cost</label>
+          <div class="mini-shell"><input type="text" id="potionEnergy" inputmode="numeric" value="20" autocomplete="off" spellcheck="false"></div>
+          <div class="mini-chips">
+            <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="12">12</button>
+            <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="20">20</button>
+            <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="60">60</button>
+          </div>
+        </div>
+        <div class="mini-field">
+          <label for="materialsCost">Materials cost</label>
+          <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="materialsCost" class="has-prefix" inputmode="decimal" value="0.50" autocomplete="off" spellcheck="false"></div>
+        </div>
+        <div class="mini-field">
+          <label>Success chance</label>
+          <div class="mini-shell"><input type="text" value="70% (fixed)" disabled style="opacity:.6;cursor:default;"></div>
+        </div>
       </div>
-
-      <section class="card card-pad" aria-label="How this works">
-        <h2 class="panel-title">How this works</h2>
-        <p class="assumption">
-          <b>Value per energy = (Hard Cores gained × price per HC) ÷ energy spent.</b> Price per HC defaults to an estimate of the final payout rate; fill in a prize pot and total HC below it to compute price per HC as <code style="font-family:'IBM Plex Mono',monospace;background:var(--surface-2);border:1px solid var(--line);padding:1px 6px;border-radius:6px;">pot ÷ total HC</code> instead — handy for testing different end-of-event scenarios. See the <a href="calculator.html" style="color:var(--gold);">HC Estimator</a> for the fuller box-cost model this price comes from.
-        </p>
-      </section>
-    </div>
+      <div class="calc-result">
+        <p class="k">Value / energy</p>
+        <p class="v" id="outPerEnergyPotion">$0.0000</p>
+        <p class="f" id="outFormulaPotion">($2.00 − $0.50) × 70% ÷ 20</p>
+      </div>
+    </section>
   </div>
 
-  <div class="compare-note">More comparisons coming: this will grow into a side-by-side of Hard Cores against other ways to spend energy, so the value-per-energy numbers above line up against each other directly.</div>
+  <div class="compare-note">Comparing: <b>value per energy</b> across activities — Hard Cores' price/HC defaults to an estimate (or set your own pot ÷ total HC scenario); Potion Making assumes a fixed 70% craft success rate and that materials are spent whether or not the craft succeeds. More comparisons coming.</div>
 
   <footer>
     <span>Part of the <a href="index.html">Gigaverse Awakening Tracker</a>.</span>
@@ -221,12 +227,13 @@
 (function () {
   "use strict";
   var el = function (id) { return document.getElementById(id); };
-  var f = { hcGained: el("hcGained"), energyCost: el("energyCost"), pricePerHC: el("pricePerHC"), pot: el("pot"), totalHC: el("totalHC") };
+  var hc = { hcGained: el("hcGained"), energyCost: el("energyCost"), pricePerHC: el("pricePerHC"), pot: el("pot"), totalHC: el("totalHC") };
+  var pot = { potionPrice: el("potionPrice"), potionEnergy: el("potionEnergy"), materialsCost: el("materialsCost") };
 
   function parseNum(v) { var n = parseFloat(String(v).replace(/[^0-9.]/g, "")); return isFinite(n) ? n : 0; }
   function commaInt(n) { return Math.round(n).toLocaleString("en-US"); }
-  function usd(n) { return n.toLocaleString("en-US", { style:"currency", currency:"USD", minimumFractionDigits:2, maximumFractionDigits:2 }); }
-  function usdPrecise(n) { return "$" + n.toFixed(n < 0.001 ? 6 : 4); }
+  function usdPrecise(n) { return "$" + n.toFixed(Math.abs(n) < 0.001 ? 6 : 4); }
+  function usd2(n) { return "$" + n.toFixed(2); }
 
   function liveComma(input) {
     var start = input.selectionStart;
@@ -240,49 +247,59 @@
     try { input.setSelectionRange(pos, pos); } catch (e) {}
   }
 
-  function calc() {
-    var hc = parseNum(f.hcGained.value);
-    var energy = parseNum(f.energyCost.value);
+  function calcHC() {
+    var hcGained = parseNum(hc.hcGained.value);
+    var energy = parseNum(hc.energyCost.value);
 
-    // Pot ÷ total HC overwrites price per HC whenever both are present.
-    var pot = parseNum(f.pot.value), totalHC = parseNum(f.totalHC.value);
-    if (pot > 0 && totalHC > 0) {
-      var computed = pot / totalHC;
-      f.pricePerHC.value = computed.toFixed(6);
+    var potVal = parseNum(hc.pot.value), totalHC = parseNum(hc.totalHC.value);
+    if (potVal > 0 && totalHC > 0) {
+      var computed = potVal / totalHC;
+      hc.pricePerHC.value = computed.toFixed(6);
       el("potNote").hidden = false;
       el("potNoteVal").textContent = usdPrecise(computed);
     } else {
       el("potNote").hidden = true;
     }
 
-    var price = parseFloat(f.pricePerHC.value) || 0;
-    var totalValue = hc * price;
-    var perEnergy = energy > 0 ? totalValue / energy : 0;
-    var hcPerEnergy = energy > 0 ? hc / energy : 0;
+    var price = parseFloat(hc.pricePerHC.value) || 0;
+    var perEnergy = energy > 0 ? (hcGained * price) / energy : 0;
 
-    el("outPerEnergy").textContent = usdPrecise(perEnergy);
-    el("outFormula").innerHTML = commaInt(hc) + " HC × " + usdPrecise(price) + "/HC ÷ " + commaInt(energy) + " energy";
-    el("outTotalValue").textContent = usd(totalValue);
-    el("outHCperEnergy").textContent = hcPerEnergy.toLocaleString("en-US", { minimumFractionDigits:2, maximumFractionDigits:2 });
+    el("outPerEnergyHC").textContent = usdPrecise(perEnergy);
+    el("outFormulaHC").textContent = commaInt(hcGained) + " HC × " + usdPrecise(price) + " ÷ " + commaInt(energy) + " energy";
   }
 
-  Object.keys(f).forEach(function (k) { f[k].addEventListener("input", calc); });
-  f.hcGained.addEventListener("input", function () { liveComma(f.hcGained); });
-  f.totalHC.addEventListener("input", function () { liveComma(f.totalHC); });
-  f.pot.addEventListener("input", function () { liveComma(f.pot); });
-  f.hcGained.addEventListener("blur", function () { if (f.hcGained.value.trim()) f.hcGained.value = commaInt(parseNum(f.hcGained.value)); });
-  f.totalHC.addEventListener("blur", function () { if (f.totalHC.value.trim()) f.totalHC.value = commaInt(parseNum(f.totalHC.value)); });
-  f.pot.addEventListener("blur", function () { if (f.pot.value.trim()) f.pot.value = commaInt(parseNum(f.pot.value)); });
+  function calcPotion() {
+    var price = parseNum(pot.potionPrice.value);
+    var energy = parseNum(pot.potionEnergy.value);
+    var materials = parseNum(pot.materialsCost.value);
+    var net = (price - materials) * 0.7;
+    var perEnergy = energy > 0 ? net / energy : 0;
 
-  document.querySelectorAll(".chip[data-fill]").forEach(function (btn) {
+    el("outPerEnergyPotion").textContent = usdPrecise(perEnergy);
+    el("outFormulaPotion").textContent = "(" + usd2(price) + " − " + usd2(materials) + ") × 70% ÷ " + commaInt(energy);
+  }
+
+  Object.keys(hc).forEach(function (k) { hc[k].addEventListener("input", calcHC); });
+  hc.hcGained.addEventListener("input", function () { liveComma(hc.hcGained); });
+  hc.totalHC.addEventListener("input", function () { liveComma(hc.totalHC); });
+  hc.pot.addEventListener("input", function () { liveComma(hc.pot); });
+  hc.hcGained.addEventListener("blur", function () { if (hc.hcGained.value.trim()) hc.hcGained.value = commaInt(parseNum(hc.hcGained.value)); });
+  hc.totalHC.addEventListener("blur", function () { if (hc.totalHC.value.trim()) hc.totalHC.value = commaInt(parseNum(hc.totalHC.value)); });
+  hc.pot.addEventListener("blur", function () { if (hc.pot.value.trim()) hc.pot.value = commaInt(parseNum(hc.pot.value)); });
+
+  Object.keys(pot).forEach(function (k) { pot[k].addEventListener("input", calcPotion); });
+
+  document.querySelectorAll(".mini-chip[data-fill]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var target = f[btn.dataset.fill];
+      var all = Object.assign({}, hc, pot);
+      var target = all[btn.dataset.fill];
       target.value = commaInt(+btn.dataset.value);
-      calc();
+      calcHC(); calcPotion();
     });
   });
 
-  calc();
+  calcHC();
+  calcPotion();
 })();
 </script>
 </body>
