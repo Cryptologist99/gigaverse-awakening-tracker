@@ -211,7 +211,7 @@
             <th>Move</th>
             <th>Player</th>
             <th class="num">Hard Cores</th>
-            <th class="num">vs. previous day</th>
+            <th class="num" id="colDelta">vs. previous day</th>
             <th class="num">3-day avg</th>
           </tr>
         </thead>
@@ -327,6 +327,7 @@
 
   function applyDaily(data) {
     DAILY_DATA = data;
+    el("colDelta").textContent = "vs. previous day";
     STATE.players = data.players || [];
     var cur = data.current || {}, prev = data.previous || null;
 
@@ -358,10 +359,11 @@
   }
 
   // ---- Live mode: fetch straight from gigaverse.io (CORS-open), all ~28 pages. ----
-  // No per-player history exists at this resolution, so Move/vs-previous-day/3-day-avg
-  // stay blank here (those columns need the twice-daily digest to compare against, and
-  // that digest deliberately doesn't carry wallets, so it can't be joined to live rows).
+  // Move/gained/avg are joined back to the last daily digest by username (unique there,
+  // and the digest deliberately carries no wallets) — anon or brand-new-since-snapshot
+  // rows just don't have a match and show blanks like any other missing-history row.
   function applyLive(agg) {
+    el("colDelta").textContent = "since snapshot";
     STATE.players = agg.players;
     var cur = { pot: agg.pot, totalHC: agg.totalHC, holders: agg.holders, ts: agg.ts };
     var baseline = DAILY_DATA && DAILY_DATA.current ? DAILY_DATA.current : null;
@@ -369,7 +371,8 @@
 
     el("snapbar").hidden = false;
     el("snapMode").textContent = "live";
-    el("snapText").innerHTML = "Pulled directly from gigaverse.io just now — " + commaInt(agg.holders) + " holders across " + agg.pages + " pages. No day-over-day history at this resolution; switch to Daily snapshot for growth trends.";
+    el("snapText").innerHTML = "Pulled directly from gigaverse.io just now — " + commaInt(agg.holders) + " holders across " + agg.pages + " pages. Move and Hard Cores gained are vs the last daily snapshot"
+      + (baseline ? (" (<b>" + fmtET(baseline.ts) + "</b>)") : "") + "; 3-day avg is carried over unchanged from that snapshot.";
 
     el("srcDot").className = "dot live";
     el("srcText").innerHTML = "<b>Live</b> · just now";
@@ -395,8 +398,28 @@
         var entries = [];
         for (var i = 0; i < all.length; i++) entries = entries.concat(all[i].leaderboard || []);
         entries.sort(function (a, b) { return (+b.amount) - (+a.amount); });
+
+        // Join to the last daily snapshot by username (unique in the digest — no wallets
+        // in it by design, so this is the best available key) to show Move / gained-since /
+        // avg alongside live standings. Unmatched (anon, or genuinely new since the last
+        // snapshot) just get blanks, same as any other "no history yet" row.
+        var dailyByName = {};
+        if (DAILY_DATA && DAILY_DATA.players) {
+          for (var j = 0; j < DAILY_DATA.players.length; j++) {
+            var dp = DAILY_DATA.players[j];
+            if (dp.name) dailyByName[dp.name] = dp;
+          }
+        }
         var players = entries.map(function (e, i) {
-          return { rank: i + 1, name: e.username || "", hc: +e.amount, hcDelta: null, rankDelta: null, avgPerDay: null, isNew: null };
+          var rank = i + 1, hc = +e.amount, name = e.username || "";
+          var d = name ? dailyByName[name] : null;
+          return {
+            rank: rank, name: name, hc: hc,
+            hcDelta: d ? hc - d.hc : null,
+            rankDelta: d ? d.rank - rank : null,
+            avgPerDay: d ? d.avgPerDay : null,
+            isNew: null
+          };
         });
         var totalHC = players.reduce(function (s, p) { return s + p.hc; }, 0);
         applyLive({ pot: potJson.prizePot.poolBalance / 100, totalHC: totalHC, holders: players.length, ts: new Date().toISOString(), players: players, pages: totalPages });
