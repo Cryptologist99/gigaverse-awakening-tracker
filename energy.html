@@ -92,6 +92,14 @@
   .mini-note { font-size:.68rem; color:var(--ink-faint); margin-top:5px; line-height:1.35; }
   .mini-note b { color:var(--gold); font-family:"IBM Plex Mono",monospace; }
 
+  .autofill-row { flex:1 1 100%; display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding-bottom:12px; margin-bottom:2px; border-bottom:1px dashed var(--line-strong); }
+  .autofill-label { font-size:.7rem; font-weight:600; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; margin-right:2px; }
+  .mini-chip.auto { background:var(--surface-2); color:var(--ink-soft); border-color:var(--line-strong); }
+  .mini-chip.auto:hover { background:var(--gold-bg); color:var(--gold); border-color:color-mix(in oklab,var(--gold) 30%,transparent); }
+  .mini-chip.auto:disabled { opacity:.5; cursor:default; transform:none; }
+  .autofill-status { font-size:.72rem; color:var(--ink-faint); }
+  .autofill-status.err { color:var(--danger); }
+
   .calc-result { flex:0 0 190px; text-align:right; border-left:1px dashed var(--line-strong); padding-left:18px; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
   .calc-result .k { font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; margin:0 0 4px; }
   .calc-result .v { font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:1.7rem; letter-spacing:-.02em; line-height:1;
@@ -182,25 +190,37 @@
     <section class="calc-card" aria-label="Potion Making">
       <div class="calc-label">
         <h2>Potion Making</h2>
-        <p>(price − materials) × 70% ÷ energy</p>
+        <p>(price − craft cost) × 70% ÷ energy</p>
       </div>
       <div class="calc-fields">
+        <div class="autofill-row">
+          <span class="autofill-label">Auto-fill from giga.market:</span>
+          <button type="button" class="mini-chip auto" data-tier="lil" data-type="juice">Lil Potion</button>
+          <button type="button" class="mini-chip auto" data-tier="mid" data-type="juice">Mid Potion</button>
+          <button type="button" class="mini-chip auto" data-tier="big" data-type="juice">Big Potion</button>
+          <button type="button" class="mini-chip auto" data-tier="lil" data-type="oil">Lil Oil</button>
+          <button type="button" class="mini-chip auto" data-tier="mid" data-type="oil">Mid Oil</button>
+          <button type="button" class="mini-chip auto" data-tier="big" data-type="oil">Big Oil</button>
+          <span class="autofill-status" id="autofillStatus"></span>
+        </div>
         <div class="mini-field">
-          <label for="potionPrice">Potion price</label>
+          <label for="potionPrice">Price</label>
           <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="potionPrice" class="has-prefix" inputmode="decimal" value="2.00" autocomplete="off" spellcheck="false"></div>
         </div>
         <div class="mini-field">
           <label for="potionEnergy">Energy cost</label>
-          <div class="mini-shell"><input type="text" id="potionEnergy" inputmode="numeric" value="20" autocomplete="off" spellcheck="false"></div>
+          <div class="mini-shell"><input type="text" id="potionEnergy" inputmode="numeric" value="4" autocomplete="off" spellcheck="false"></div>
           <div class="mini-chips">
-            <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="12">12</button>
-            <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="20">20</button>
-            <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="60">60</button>
+            <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="2">2</button>
+            <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="4">4</button>
+            <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="6">6</button>
+            <button type="button" class="mini-chip" data-fill="potionEnergy" data-value="8">8</button>
           </div>
         </div>
         <div class="mini-field">
-          <label for="materialsCost">Materials cost</label>
+          <label for="materialsCost">Craft cost</label>
           <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="materialsCost" class="has-prefix" inputmode="decimal" value="0.50" autocomplete="off" spellcheck="false"></div>
+          <p class="mini-note">Dust (Lil ×1, Mid ×2) or Shard (Big ×1)</p>
         </div>
         <div class="mini-field">
           <label>Success chance</label>
@@ -210,12 +230,12 @@
       <div class="calc-result">
         <p class="k">Value / energy</p>
         <p class="v" id="outPerEnergyPotion">$0.0000</p>
-        <p class="f" id="outFormulaPotion">($2.00 − $0.50) × 70% ÷ 20</p>
+        <p class="f" id="outFormulaPotion">($2.00 − $0.50) × 70% ÷ 4</p>
       </div>
     </section>
   </div>
 
-  <div class="compare-note">Comparing: <b>value per energy</b> across activities — Hard Cores' price/HC defaults to an estimate (or set your own pot ÷ total HC scenario); Potion Making assumes a fixed 70% craft success rate and that materials are spent whether or not the craft succeeds. More comparisons coming.</div>
+  <div class="compare-note">Comparing: <b>value per energy</b> across activities — Hard Cores' price/HC defaults to an estimate (or set your own pot ÷ total HC scenario); Potion Making assumes a fixed 70% craft success rate, that the craft cost is spent whether or not it succeeds, and that Lil/Mid/Big Oils use the same Dust/Shard craft-cost pattern as potions (only confirmed for potions and Big Oil — flag it if Lil/Mid Oil differ). Energy costs: potions 2/4/8 (Lil/Mid/Big), oils always 2. More comparisons coming.</div>
 
   <footer>
     <span>Part of the <a href="index.html">Gigaverse Awakening Tracker</a>.</span>
@@ -288,6 +308,60 @@
   hc.pot.addEventListener("blur", function () { if (hc.pot.value.trim()) hc.pot.value = commaInt(parseNum(hc.pot.value)); });
 
   Object.keys(pot).forEach(function (k) { pot[k].addEventListener("input", calcPotion); });
+
+  // ---- Auto-fill from a static digest (data/potion_prices.json) ----
+  // giga.market's API doesn't allow cross-origin browser fetches from this site (confirmed: preflight
+  // is rejected with no Access-Control-Allow-Origin), so a Pi cron job (track_potion_prices.py) pulls
+  // live floor prices server-side and writes this small JSON for the page to read same-origin instead.
+  //
+  // Recipe assumptions (per project owner): craft cost is Dust for Lil (x1) and Mid (x2), Shard for Big
+  // (x1) — confirmed for potions and for Big Oil; Lil/Mid Oil assumed to follow the same pattern by
+  // symmetry, not independently confirmed. Energy: potions are 2/4/8 for Lil/Mid/Big; oils are always 2.
+  var ENERGY_BY_TIER = { potion: { lil: 2, mid: 4, big: 8 }, oil: { lil: 2, mid: 2, big: 2 } };
+  var CRAFT_QTY = { lil: 1, mid: 2, big: 1 }; // x Dust for lil/mid, x Shard for big
+  var potionPricesCache = null;
+
+  function loadPotionPrices() {
+    if (potionPricesCache) return Promise.resolve(potionPricesCache);
+    return fetch("data/potion_prices.json", { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (j) { potionPricesCache = j; return j; });
+  }
+
+  document.querySelectorAll(".mini-chip.auto").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var tier = btn.dataset.tier, type = btn.dataset.type; // type: "juice" (potion) or "oil"
+      var craftKey = tier === "big" ? "shard" : "dust";
+      var qty = CRAFT_QTY[tier];
+      var energy = ENERGY_BY_TIER[type === "oil" ? "oil" : "potion"][tier];
+
+      var autoBtns = document.querySelectorAll(".mini-chip.auto");
+      autoBtns.forEach(function (b) { b.disabled = true; });
+      var status = el("autofillStatus");
+      status.className = "autofill-status";
+      status.textContent = "Loading…";
+
+      loadPotionPrices().then(function (data) {
+        var priceEntry = (type === "oil" ? data.oil : data.potion)[tier];
+        var craftEntry = data.craftCost[craftKey];
+        if (!priceEntry || priceEntry.priceUsd == null || !craftEntry || craftEntry.priceUsd == null) {
+          throw new Error("no price data for this tier");
+        }
+        pot.potionPrice.value = priceEntry.priceUsd.toFixed(4);
+        pot.materialsCost.value = (craftEntry.priceUsd * qty).toFixed(4);
+        pot.potionEnergy.value = String(energy);
+        calcPotion();
+        var genAt = new Date(data.generatedAt).toLocaleString("en-US", { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" });
+        status.textContent = "Filled from " + btn.textContent + " · giga.market floors as of " + genAt + ".";
+      }).catch(function (e) {
+        status.className = "autofill-status err";
+        status.textContent = "Couldn't load price data — " + e.message + ". Enter manually instead.";
+      }).then(function () {
+        autoBtns.forEach(function (b) { b.disabled = false; });
+      });
+    });
+  });
 
   document.querySelectorAll(".mini-chip[data-fill]").forEach(function (btn) {
     btn.addEventListener("click", function () {
