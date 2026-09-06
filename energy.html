@@ -205,7 +205,7 @@
     <section class="calc-card" aria-label="Crafting">
       <div class="calc-label">
         <h2>Crafting</h2>
-        <p>(price − craft cost) × 70% ÷ energy</p>
+        <p>(price × 70% − craft cost) ÷ energy</p>
       </div>
       <div class="calc-fields">
         <div class="autofill-row">
@@ -244,7 +244,7 @@
       <div class="calc-result">
         <p class="k">Value / energy</p>
         <p class="v" id="outPerEnergyPotion">$0.0000</p>
-        <p class="f" id="outFormulaPotion">($2.00 − $0.50) × 70% ÷ 4</p>
+        <p class="f" id="outFormulaPotion">($2.00 × 70% − $0.50) ÷ 4</p>
         <div class="result-multiplier">
           <label for="potionTotalEnergy">Energy spent</label>
           <input type="text" id="potionTotalEnergy" inputmode="numeric" placeholder="0" autocomplete="off" spellcheck="false">
@@ -376,11 +376,11 @@
     var price = parseNum(pot.potionPrice.value);
     var energy = parseNum(pot.potionEnergy.value);
     var materials = parseNum(pot.materialsCost.value);
-    var net = (price - materials) * 0.7;
+    var net = price * 0.7 - materials;
     var perEnergy = energy > 0 ? net / energy : 0;
 
     el("outPerEnergyPotion").textContent = usdPrecise(perEnergy);
-    el("outFormulaPotion").textContent = "(" + usd2(price) + " − " + usd2(materials) + ") × 70% ÷ " + commaInt(energy);
+    el("outFormulaPotion").textContent = "(" + usd2(price) + " × 70% − " + usd2(materials) + ") ÷ " + commaInt(energy);
     el("potionTotalValue").textContent = "= " + usd2(parseNum(el("potionTotalEnergy").value) * perEnergy);
   }
 
