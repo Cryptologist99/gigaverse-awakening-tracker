@@ -83,6 +83,8 @@
   .mini-field input { width:100%; font-family:"IBM Plex Mono",monospace; font-size:.88rem; font-weight:500; color:var(--ink);
     background:var(--surface-2); border:1.5px solid var(--line-strong); border-radius:8px; padding:8px 9px; transition:border-color .15s,box-shadow .15s; }
   .mini-field input.has-prefix { padding-left:20px; }
+  .mini-field input.has-suffix { padding-right:22px; }
+  .mini-suffix { position:absolute; right:9px; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace; font-size:.85rem; pointer-events:none; }
   .mini-field input:hover { border-color:var(--ink-faint); }
   .mini-field input:focus { outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in oklab,var(--focus) 28%,transparent); }
   .mini-chips { display:flex; gap:4px; margin-top:5px; flex-wrap:wrap; }
@@ -187,14 +189,13 @@
       </div>
     </section>
 
-    <section class="calc-card" aria-label="Potion Making">
+    <section class="calc-card" aria-label="Crafting">
       <div class="calc-label">
-        <h2>Potion Making</h2>
+        <h2>Crafting</h2>
         <p>(price − craft cost) × 70% ÷ energy</p>
       </div>
       <div class="calc-fields">
         <div class="autofill-row">
-          <span class="autofill-label">Auto-fill from giga.market:</span>
           <button type="button" class="mini-chip auto" data-tier="lil" data-type="juice">Lil Potion</button>
           <button type="button" class="mini-chip auto" data-tier="mid" data-type="juice">Mid Potion</button>
           <button type="button" class="mini-chip auto" data-tier="big" data-type="juice">Big Potion</button>
@@ -233,9 +234,61 @@
         <p class="f" id="outFormulaPotion">($2.00 − $0.50) × 70% ÷ 4</p>
       </div>
     </section>
+
+    <section class="calc-card" aria-label="Dungeons">
+      <div class="calc-label">
+        <h2>Dungeons</h2>
+        <p>(clear% × ring price − potion cost) ÷ 40</p>
+      </div>
+      <div class="calc-fields">
+        <div class="mini-field">
+          <label for="ringPrice">Ring price</label>
+          <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="ringPrice" class="has-prefix" inputmode="decimal" value="0.16" autocomplete="off" spellcheck="false"></div>
+          <div class="mini-chips">
+            <button type="button" class="mini-chip auto-ring" data-tier="silver">Avg Silver</button>
+            <button type="button" class="mini-chip auto-ring" data-tier="gold">Avg Gold</button>
+          </div>
+        </div>
+        <div class="mini-field">
+          <label for="dungeonRuns">Runs</label>
+          <div class="mini-shell"><input type="text" id="dungeonRuns" inputmode="numeric" value="1" autocomplete="off" spellcheck="false"></div>
+          <div class="mini-chips">
+            <button type="button" class="mini-chip" data-fill="dungeonRuns" data-value="1">1</button>
+            <button type="button" class="mini-chip" data-fill="dungeonRuns" data-value="3">3</button>
+            <button type="button" class="mini-chip" data-fill="dungeonRuns" data-value="9">9</button>
+            <button type="button" class="mini-chip" data-fill="dungeonRuns" data-value="12">12</button>
+          </div>
+        </div>
+        <div class="mini-field">
+          <label for="clearRate">Clear rate</label>
+          <div class="mini-shell"><input type="text" id="clearRate" class="has-suffix" inputmode="numeric" value="50" autocomplete="off" spellcheck="false"><span class="mini-suffix">%</span></div>
+          <div class="mini-chips">
+            <button type="button" class="mini-chip" data-fill="clearRate" data-value="30">30</button>
+            <button type="button" class="mini-chip" data-fill="clearRate" data-value="50">50</button>
+            <button type="button" class="mini-chip" data-fill="clearRate" data-value="75">75</button>
+            <button type="button" class="mini-chip" data-fill="clearRate" data-value="100">100</button>
+          </div>
+        </div>
+        <div class="mini-field">
+          <label for="dungeonPotionCost">Potion cost</label>
+          <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="dungeonPotionCost" class="has-prefix" inputmode="decimal" value="0.20" autocomplete="off" spellcheck="false"></div>
+          <p class="mini-note">Spent per run either way</p>
+        </div>
+        <div class="mini-field">
+          <label>Energy / run</label>
+          <div class="mini-shell"><input type="text" value="40 (fixed)" disabled style="opacity:.6;cursor:default;"></div>
+        </div>
+      </div>
+      <div class="calc-result">
+        <p class="k">Value / energy</p>
+        <p class="v" id="outPerEnergyDungeon">$0.0000</p>
+        <p class="f" id="outFormulaDungeon">(50% × $0.16 − $0.20) ÷ 40</p>
+        <p class="f" id="outProfitDungeon">Expected profit over 1 run: $0.00</p>
+      </div>
+    </section>
   </div>
 
-  <div class="compare-note">Comparing: <b>value per energy</b> across activities — Hard Cores' price/HC defaults to an estimate (or set your own pot ÷ total HC scenario); Potion Making assumes a fixed 70% craft success rate, that the craft cost is spent whether or not it succeeds, and that Lil/Mid/Big Oils use the same Dust/Shard craft-cost pattern as potions (only confirmed for potions and Big Oil — flag it if Lil/Mid Oil differ). Energy costs: potions 2/4/8 (Lil/Mid/Big), oils always 2. More comparisons coming.</div>
+  <div class="compare-note">Comparing: <b>value per energy</b> across activities — Hard Cores' price/HC defaults to an estimate (or set your own pot ÷ total HC scenario); Crafting assumes a fixed 70% craft success rate, that the craft cost is spent whether or not it succeeds, and that Lil/Mid/Big Oils use the same Dust/Shard craft-cost pattern as potions (only confirmed for potions and Big Oil — flag it if Lil/Mid Oil differ). Energy costs: potions 2/4/8 (Lil/Mid/Big), oils always 2. Dungeons treats each run as an independent attempt (potion cost spent whether or not it clears), so value/energy doesn't change with run count — "runs" only scales the expected-profit total shown below it. More comparisons coming.</div>
 
   <footer>
     <span>Part of the <a href="index.html">Gigaverse Awakening Tracker</a>.</span>
@@ -249,6 +302,8 @@
   var el = function (id) { return document.getElementById(id); };
   var hc = { hcGained: el("hcGained"), energyCost: el("energyCost"), pricePerHC: el("pricePerHC"), pot: el("pot"), totalHC: el("totalHC") };
   var pot = { potionPrice: el("potionPrice"), potionEnergy: el("potionEnergy"), materialsCost: el("materialsCost") };
+  var dun = { ringPrice: el("ringPrice"), dungeonRuns: el("dungeonRuns"), clearRate: el("clearRate"), dungeonPotionCost: el("dungeonPotionCost") };
+  var DUNGEON_ENERGY_PER_RUN = 40;
 
   function parseNum(v) { var n = parseFloat(String(v).replace(/[^0-9.]/g, "")); return isFinite(n) ? n : 0; }
   function commaInt(n) { return Math.round(n).toLocaleString("en-US"); }
@@ -297,6 +352,21 @@
 
     el("outPerEnergyPotion").textContent = usdPrecise(perEnergy);
     el("outFormulaPotion").textContent = "(" + usd2(price) + " − " + usd2(materials) + ") × 70% ÷ " + commaInt(energy);
+  }
+
+  function calcDungeon() {
+    var ringPrice = parseNum(dun.ringPrice.value);
+    var runs = parseNum(dun.dungeonRuns.value) || 0;
+    var clearPct = parseNum(dun.clearRate.value);
+    var potionCost = parseNum(dun.dungeonPotionCost.value);
+
+    var perRunProfit = (clearPct / 100) * ringPrice - potionCost;
+    var perEnergy = perRunProfit / DUNGEON_ENERGY_PER_RUN;
+    var totalProfit = perRunProfit * runs;
+
+    el("outPerEnergyDungeon").textContent = usdPrecise(perEnergy);
+    el("outFormulaDungeon").textContent = "(" + commaInt(clearPct) + "% × " + usd2(ringPrice) + " − " + usd2(potionCost) + ") ÷ " + DUNGEON_ENERGY_PER_RUN;
+    el("outProfitDungeon").textContent = "Expected profit over " + commaInt(runs) + " run" + (runs === 1 ? "" : "s") + ": " + usd2(totalProfit);
   }
 
   Object.keys(hc).forEach(function (k) { hc[k].addEventListener("input", calcHC); });
@@ -365,15 +435,48 @@
 
   document.querySelectorAll(".mini-chip[data-fill]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var all = Object.assign({}, hc, pot);
+      var all = Object.assign({}, hc, pot, dun);
       var target = all[btn.dataset.fill];
       target.value = commaInt(+btn.dataset.value);
-      calcHC(); calcPotion();
+      calcHC(); calcPotion(); calcDungeon();
+    });
+  });
+
+  Object.keys(dun).forEach(function (k) { dun[k].addEventListener("input", calcDungeon); });
+
+  // Ring prices come from the Supply page's own digest (data/ring_aggregate.json) — same-origin,
+  // already generated by the Pi cron (build_ring_supply.py), no separate fetch needed.
+  var ringPricesCache = null;
+  function loadRingPrices() {
+    if (ringPricesCache) return Promise.resolve(ringPricesCache);
+    return fetch("data/ring_aggregate.json", { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (j) { ringPricesCache = j; return j; });
+  }
+  document.querySelectorAll(".mini-chip.auto-ring").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var tier = btn.dataset.tier; // "silver" or "gold"
+      var autoBtns = document.querySelectorAll(".mini-chip.auto-ring");
+      autoBtns.forEach(function (b) { b.disabled = true; });
+      var original = btn.textContent;
+      loadRingPrices().then(function (data) {
+        var entry = data.current && data.current[tier];
+        if (!entry || entry.floorUsd == null) throw new Error("no floor data");
+        dun.ringPrice.value = entry.floorUsd.toFixed(4);
+        calcDungeon();
+      }).catch(function () {
+        btn.textContent = "Failed";
+        setTimeout(function () { btn.textContent = original; }, 2000);
+      }).then(function () {
+        autoBtns.forEach(function (b) { b.disabled = false; });
+      });
     });
   });
 
   calcHC();
   calcPotion();
+  calcDungeon();
 })();
 </script>
 </body>
