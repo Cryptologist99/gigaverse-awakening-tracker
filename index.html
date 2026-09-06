@@ -73,6 +73,13 @@
   .refresh { font-family:"IBM Plex Mono",monospace; font-size:.76rem; background:var(--gold-bg); color:var(--gold);
     border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:3px 10px; border-radius:999px; cursor:pointer; font-weight:500; }
   .refresh:disabled { opacity:.55; cursor:default; }
+  .modetoggle { display:inline-flex; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:3px; gap:2px; box-shadow:var(--shadow); }
+  .mtbtn { font-family:"IBM Plex Mono",monospace; font-size:.76rem; font-weight:600; color:var(--ink-soft);
+    background:transparent; border:none; border-radius:999px; padding:6px 14px; cursor:pointer; transition:background .15s,color .15s; }
+  .mtbtn:hover { color:var(--ink); }
+  .mtbtn.active { background:var(--gold-bg); color:var(--gold); }
+  .mtbtn:disabled { opacity:.5; cursor:default; }
+  .dot.live { background:var(--live); }
   .countdown { font-size:.82rem; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;
     background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 13px; box-shadow:var(--shadow); }
   .countdown b { color:var(--gold); }
@@ -157,6 +164,11 @@
       <span class="dot" id="srcDot"></span>
       <span id="srcText">Loading…</span>
     </div>
+    <div class="modetoggle" role="tablist" aria-label="Data mode">
+      <button type="button" class="mtbtn active" id="modeDaily" data-mode="daily">Daily snapshot</button>
+      <button type="button" class="mtbtn" id="modeLive" data-mode="live">Live</button>
+    </div>
+    <button type="button" class="refresh" id="liveRefresh" hidden>↻ Refresh</button>
     <div class="countdown" id="countdown" hidden></div>
   </div>
 
@@ -218,12 +230,16 @@
 (function () {
   "use strict";
   var JSON_URL = "data/leaderboard_daily.json";
+  var API_POT = "https://gigaverse.io/api/itempools/public";
+  var API_LB  = "https://gigaverse.io/api/leaderboard/id/8";
   var EVENT_END = Date.UTC(2026, 9, 9, 18, 0, 0) / 1000; // Oct 9 2026 18:00 UTC
   var DEFAULT_SHOW = 250;
 
   var el = function (id) { return document.getElementById(id); };
   var STATE = { players: [] };
-  var showAll = false, countdownTimer = null;
+  var DAILY_DATA = null; // last-loaded daily digest — used as the comparison baseline in live mode
+  var MODE = "daily";
+  var showAll = false, countdownTimer = null, liveLoading = false;
 
   function commaInt(n) { return Math.round(n).toLocaleString("en-US"); }
   function usd(n) { return n == null ? "—" : n.toLocaleString("en-US", { style:"currency", currency:"USD", minimumFractionDigits:2, maximumFractionDigits:2 }); }
@@ -292,13 +308,11 @@
     }
   }
 
-  function apply(data) {
-    STATE.players = data.players || [];
-    var cur = data.current || {}, prev = data.previous || null;
-
+  function applyTiles(cur, prev, sinceLabel) {
     el("tlPot").textContent = usd(cur.pot);
     el("tlHC").textContent = commaInt(cur.totalHC || 0);
     el("tlHolders").textContent = commaInt(cur.holders || 0);
+    el("tlPotD").textContent = ""; el("tlHCD").textContent = ""; el("tlHoldersD").textContent = ""; el("mvSince").textContent = "";
 
     if (prev) {
       var dPot = (cur.pot != null && prev.pot != null) ? cur.pot - prev.pot : null;
@@ -307,8 +321,16 @@
       el("tlHCD").className = "d " + (dHC > 0 ? "up" : dHC < 0 ? "down" : ""); el("tlHCD").textContent = signed(dHC);
       var dH = (cur.holders || 0) - (prev.holders || 0);
       el("tlHoldersD").className = "d " + (dH > 0 ? "up" : dH < 0 ? "down" : ""); el("tlHoldersD").textContent = signed(dH);
-      el("mvSince").textContent = "vs " + fmtET(prev.ts);
+      el("mvSince").textContent = "vs " + sinceLabel;
     }
+  }
+
+  function applyDaily(data) {
+    DAILY_DATA = data;
+    STATE.players = data.players || [];
+    var cur = data.current || {}, prev = data.previous || null;
+
+    applyTiles(cur, prev, prev ? fmtET(prev.ts) : "—");
 
     var provisional = data.mode !== "daily";
     el("snapbar").hidden = false;
@@ -324,10 +346,10 @@
     render();
   }
 
-  function load() {
+  function loadDaily() {
     el("srcText").innerHTML = "<b>Loading…</b>";
     return fetch(JSON_URL, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("json " + r.status); return r.json(); })
-      .then(function (data) { apply(data); })
+      .then(function (data) { applyDaily(data); })
       .catch(function () {
         el("srcDot").className = "dot err";
         el("srcText").innerHTML = "<b>Couldn't load the daily snapshot</b>";
@@ -335,9 +357,76 @@
       });
   }
 
+  // ---- Live mode: fetch straight from gigaverse.io (CORS-open), all ~28 pages. ----
+  // No per-player history exists at this resolution, so Move/vs-previous-day/3-day-avg
+  // stay blank here (those columns need the twice-daily digest to compare against, and
+  // that digest deliberately doesn't carry wallets, so it can't be joined to live rows).
+  function applyLive(agg) {
+    STATE.players = agg.players;
+    var cur = { pot: agg.pot, totalHC: agg.totalHC, holders: agg.holders, ts: agg.ts };
+    var baseline = DAILY_DATA && DAILY_DATA.current ? DAILY_DATA.current : null;
+    applyTiles(cur, baseline, baseline ? (fmtET(baseline.ts) + " (last daily snapshot)") : "—");
+
+    el("snapbar").hidden = false;
+    el("snapMode").textContent = "live";
+    el("snapText").innerHTML = "Pulled directly from gigaverse.io just now — " + commaInt(agg.holders) + " holders across " + agg.pages + " pages. No day-over-day history at this resolution; switch to Daily snapshot for growth trends.";
+
+    el("srcDot").className = "dot live";
+    el("srcText").innerHTML = "<b>Live</b> · just now";
+    el("boardTitle").innerHTML = '<span class="tt">Live</span> standings';
+    el("footNote").textContent = "Live from gigaverse.io · leaderboard id 8 (Hard Cores) · " + commaInt(agg.holders) + " holders.";
+    render();
+  }
+
+  function loadLive() {
+    if (liveLoading) return Promise.resolve();
+    liveLoading = true;
+    el("liveRefresh").disabled = true;
+    el("srcText").innerHTML = "<b>Loading live data…</b>";
+    el("srcDot").className = "dot live";
+    var potP = fetch(API_POT, { headers: { "Accept": "application/json" } }).then(function (r) { if (!r.ok) throw new Error("pot " + r.status); return r.json(); });
+    var p1P = fetch(API_LB + "?page=1").then(function (r) { if (!r.ok) throw new Error("lb " + r.status); return r.json(); });
+    return Promise.all([potP, p1P]).then(function (res) {
+      var potJson = res[0], p1 = res[1];
+      var totalPages = (p1.pagination && p1.pagination.totalPages) || 1;
+      var pages = [Promise.resolve(p1)];
+      for (var pg = 2; pg <= totalPages; pg++) pages.push(fetch(API_LB + "?page=" + pg).then(function (r) { return r.ok ? r.json() : { leaderboard: [] }; }));
+      return Promise.all(pages).then(function (all) {
+        var entries = [];
+        for (var i = 0; i < all.length; i++) entries = entries.concat(all[i].leaderboard || []);
+        entries.sort(function (a, b) { return (+b.amount) - (+a.amount); });
+        var players = entries.map(function (e, i) {
+          return { rank: i + 1, name: e.username || "", hc: +e.amount, hcDelta: null, rankDelta: null, avgPerDay: null, isNew: null };
+        });
+        var totalHC = players.reduce(function (s, p) { return s + p.hc; }, 0);
+        applyLive({ pot: potJson.prizePot.poolBalance / 100, totalHC: totalHC, holders: players.length, ts: new Date().toISOString(), players: players, pages: totalPages });
+      });
+    }).catch(function (e) {
+      el("srcDot").className = "dot err";
+      el("srcText").innerHTML = "<b>Live fetch failed</b> — " + esc(e.message) + ". Try again, or switch to Daily.";
+    }).then(function () { liveLoading = false; el("liveRefresh").disabled = false; });
+  }
+
+  function setMode(mode) {
+    if (mode === MODE) { if (mode === "live") loadLive(); return; }
+    MODE = mode;
+    el("modeDaily").classList.toggle("active", mode === "daily");
+    el("modeLive").classList.toggle("active", mode === "live");
+    el("liveRefresh").hidden = mode !== "live";
+    showAll = false;
+    if (mode === "daily") {
+      if (DAILY_DATA) applyDaily(DAILY_DATA); else loadDaily();
+    } else {
+      loadLive();
+    }
+  }
+
   el("search").addEventListener("input", render);
+  el("modeDaily").addEventListener("click", function () { setMode("daily"); });
+  el("modeLive").addEventListener("click", function () { setMode("live"); });
+  el("liveRefresh").addEventListener("click", function () { loadLive(); });
   startCountdown();
-  load();
+  loadDaily();
 })();
 </script>
 </body>
