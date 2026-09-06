@@ -272,6 +272,10 @@
         <div class="mini-field">
           <label for="dungeonPotionCost">Potion cost</label>
           <div class="mini-shell"><span class="mini-prefix">$</span><input type="text" id="dungeonPotionCost" class="has-prefix" inputmode="decimal" value="0.20" autocomplete="off" spellcheck="false"></div>
+          <div class="mini-chips">
+            <button type="button" class="mini-chip auto-potioncost" data-mult="1">1 Potion</button>
+            <button type="button" class="mini-chip auto-potioncost" data-mult="3">3 Potions</button>
+          </div>
           <p class="mini-note">One-time cost for the session, not per run</p>
         </div>
         <div class="mini-field">
@@ -466,6 +470,29 @@
         var entry = data.current && data.current[tier];
         if (!entry || entry.floorUsd == null) throw new Error("no floor data");
         dun.ringPrice.value = entry.floorUsd.toFixed(4);
+        calcDungeon();
+      }).catch(function () {
+        btn.textContent = "Failed";
+        setTimeout(function () { btn.textContent = original; }, 2000);
+      }).then(function () {
+        autoBtns.forEach(function (b) { b.disabled = false; });
+      });
+    });
+  });
+
+  // Dungeon "potion cost" presets: average potion price across Lil/Mid/Big (same digest as Crafting's
+  // auto-fill), and 3x that. This is the market cost of a potion, not the craft cost from Crafting.
+  document.querySelectorAll(".mini-chip.auto-potioncost").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var mult = +btn.dataset.mult;
+      var autoBtns = document.querySelectorAll(".mini-chip.auto-potioncost");
+      autoBtns.forEach(function (b) { b.disabled = true; });
+      var original = btn.textContent;
+      loadPotionPrices().then(function (data) {
+        var tiers = ["lil", "mid", "big"].map(function (t) { return data.potion[t]; }).filter(function (t) { return t && t.priceUsd != null; });
+        if (!tiers.length) throw new Error("no potion price data");
+        var avg = tiers.reduce(function (s, t) { return s + t.priceUsd; }, 0) / tiers.length;
+        dun.dungeonPotionCost.value = (avg * mult).toFixed(4);
         calcDungeon();
       }).catch(function () {
         btn.textContent = "Failed";
