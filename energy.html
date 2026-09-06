@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Energy Value Calculator</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<meta name="description" content="Compare what a point of Gigaverse energy is worth across different in-game activities.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg:#ECEBF2; --surface:#F7F6FB; --surface-2:#EFEEF6;
+    --ink:#1B1A28; --ink-soft:#55536A; --ink-faint:#8A889E;
+    --line:#DAD8E6; --line-strong:#C6C3D6;
+    --gold:#A9741E; --gold-bg:#F3E7CE; --teal:#1E8E7E; --danger:#B4472F;
+    --hero-grad-a:#B9822B; --hero-grad-b:#8A5A12; --focus:#7C69C9;
+    --shadow:0 1px 2px rgba(27,26,40,.06),0 12px 32px -12px rgba(27,26,40,.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#100F17; --surface:#1A1926; --surface-2:#221F31;
+      --ink:#ECEAF4; --ink-soft:#ADA9C4; --ink-faint:#746F8C;
+      --line:#2C2A3C; --line-strong:#3B3850;
+      --gold:#E8B85C; --gold-bg:#2A2213; --teal:#46C7B4; --danger:#E88266;
+      --hero-grad-a:#F1CB77; --hero-grad-b:#C98F35; --focus:#A594F0;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#100F17; --surface:#1A1926; --surface-2:#221F31;
+    --ink:#ECEAF4; --ink-soft:#ADA9C4; --ink-faint:#746F8C;
+    --line:#2C2A3C; --line-strong:#3B3850;
+    --gold:#E8B85C; --gold-bg:#2A2213; --teal:#46C7B4; --danger:#E88266;
+    --hero-grad-a:#F1CB77; --hero-grad-b:#C98F35; --focus:#A594F0;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -16px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Instrument Sans",system-ui,-apple-system,sans-serif; font-size:16px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--gold) 10%, transparent) 0%, transparent 55%),
+      radial-gradient(90% 80% at 0% 100%, color-mix(in oklab, var(--focus) 9%, transparent) 0%, transparent 50%);
+    background-attachment:fixed;
+  }
+  .topnav { position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding:11px clamp(16px,4vw,48px); background:color-mix(in oklab,var(--surface) 85%,transparent); backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .brand { display:inline-flex; align-items:center; gap:9px; font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:1rem; letter-spacing:-.01em; color:var(--ink); text-decoration:none; }
+  .brand-mark { color:var(--gold); font-size:1.05em; }
+  .navlinks { display:flex; gap:5px; flex-wrap:wrap; }
+  .navlink { font-size:.88rem; font-weight:600; color:var(--ink-soft); text-decoration:none; padding:7px 13px; border-radius:9px; transition:background .15s,color .15s; }
+  .navlink:hover { background:var(--surface-2); color:var(--ink); }
+  .navlink.active { background:var(--gold-bg); color:var(--gold); }
+  .wrap { max-width:1080px; margin:0 auto; padding:clamp(20px,4vw,48px); }
+
+  header.masthead { margin-bottom:28px; }
+  .eyebrow { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  .eyebrow::before { content:""; width:22px; height:1px; background:var(--gold); display:inline-block; }
+  h1 { font-family:"Bricolage Grotesque","Instrument Sans",sans-serif; font-weight:800; font-size:clamp(2rem,5vw,3.1rem); line-height:1.02; letter-spacing:-.02em; margin:0 0 12px; text-wrap:balance; }
+  .lede { color:var(--ink-soft); max-width:70ch; margin:0; font-size:1.02rem; }
+  .lede .disclaimer { display:inline-block; margin-top:8px; font-weight:700; letter-spacing:.05em; color:var(--gold); }
+
+  .grid { display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:20px; align-items:start; margin-bottom:22px; }
+  @media (max-width:820px) { .grid { grid-template-columns:1fr; } }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+  .card-pad { padding:clamp(18px,3vw,26px); }
+  .panel-title { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1.1rem; margin:0 0 2px; letter-spacing:-.01em; }
+  .panel-sub { color:var(--ink-faint); font-size:.85rem; margin:0 0 20px; }
+
+  .field { margin-bottom:20px; } .field:last-child { margin-bottom:0; }
+  .field > label { display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-weight:600; font-size:.9rem; margin-bottom:7px; }
+  .unit { color:var(--ink-faint); font-weight:500; font-size:.78rem; letter-spacing:.04em; text-transform:uppercase; }
+  .input-shell { position:relative; display:flex; align-items:center; }
+  .prefix { position:absolute; left:14px; color:var(--ink-faint); font-family:"IBM Plex Mono",monospace; font-size:1rem; pointer-events:none; }
+  input[type="text"] { width:100%; font-family:"IBM Plex Mono",monospace; font-size:1.05rem; font-weight:500; color:var(--ink);
+    background:var(--surface-2); border:1.5px solid var(--line-strong); border-radius:10px; padding:12px 14px; transition:border-color .15s,box-shadow .15s; }
+  input.has-prefix { padding-left:30px; }
+  input[type="text"]:hover { border-color:var(--ink-faint); }
+  input[type="text"]:focus { outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in oklab,var(--focus) 28%,transparent); }
+  .helper { margin-top:7px; font-size:.8rem; color:var(--ink-faint); display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
+  .chip { font-family:"IBM Plex Mono",monospace; font-size:.76rem; background:var(--gold-bg); color:var(--gold);
+    border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:3px 8px; border-radius:999px; cursor:pointer; font-weight:500; transition:transform .12s,background .15s; }
+  .chip:hover { transform:translateY(-1px); } .chip:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+
+  .subpanel { margin-top:16px; padding-top:16px; border-top:1px dashed var(--line-strong); }
+  .subpanel-title { font-size:.8rem; font-weight:600; color:var(--ink-soft); margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+  .subpanel-title::before { content:"⇢"; color:var(--gold); }
+  .subgrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:480px) { .subgrid { grid-template-columns:1fr; } }
+  .computed-note { margin-top:10px; font-size:.8rem; color:var(--ink-faint); }
+  .computed-note b { color:var(--gold); font-family:"IBM Plex Mono",monospace; }
+
+  .results { display:flex; flex-direction:column; gap:18px; }
+  .hero { background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 8%,var(--surface)) 0%,var(--surface) 60%);
+    border:1px solid color-mix(in oklab,var(--gold) 26%,var(--line)); border-radius:16px; padding:clamp(20px,3vw,28px); position:relative; overflow:hidden; }
+  .hero-label { font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; margin:0 0 6px; }
+  .payout { font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:clamp(2.6rem,8vw,4rem); line-height:1; letter-spacing:-.03em;
+    background:linear-gradient(96deg,var(--hero-grad-a),var(--hero-grad-b)); -webkit-background-clip:text; background-clip:text; color:transparent; font-variant-numeric:tabular-nums; margin:0; }
+  .payout-sub { margin:10px 0 0; color:var(--ink-soft); font-size:.95rem; } .payout-sub b { color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
+
+  .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  @media (max-width:480px) { .stats { grid-template-columns:1fr; } }
+  .stat { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:15px 16px; }
+  .stat .k { font-size:.76rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 6px; font-weight:600; }
+  .stat .v { font-family:"IBM Plex Mono",monospace; font-size:1.32rem; font-weight:600; letter-spacing:-.01em; font-variant-numeric:tabular-nums; margin:0; }
+  .stat .v.gold { color:var(--gold); } .stat .note { font-size:.76rem; color:var(--ink-faint); margin:4px 0 0; }
+
+  .assumption { font-size:.82rem; color:var(--ink-soft); line-height:1.55; margin:0; } .assumption b { color:var(--ink); font-weight:600; }
+
+  .compare-note { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:16px 20px; font-size:.88rem; color:var(--ink-soft); }
+  .compare-note b { color:var(--ink); }
+
+  footer { margin-top:26px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
+  footer a { color:var(--gold); text-decoration:none; } footer a:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="index.html"><span class="brand-mark">◆</span> Gigaverse Awakening Tracker</a>
+  <div class="navlinks">
+    <a href="index.html" class="navlink">Leaderboard</a>
+    <a href="calculator.html" class="navlink">HC Estimator</a>
+    <a href="energy.html" class="navlink active">Energy Value</a>
+    <a href="supply.html" class="navlink">Supply</a>
+  </div>
+</nav>
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">Gigaverse · Economy</p>
+    <h1>Energy Value Calculator</h1>
+    <p class="lede">How much is a point of energy actually worth? This compares what different in-game activities return per energy spent, so you can decide where to put yours. Starting with <b>Hard Cores</b> — more comparisons coming.
+      <strong class="disclaimer">NAPKIN MATH. NOT FINANCIAL ADVICE. DYOR.</strong></p>
+  </header>
+
+  <div class="grid">
+    <section class="card card-pad" aria-label="Hard Cores inputs">
+      <h2 class="panel-title">Hard Cores</h2>
+      <p class="panel-sub">How many HC a run gets you, what it cost in energy, and what an HC is worth.</p>
+
+      <div class="field">
+        <label for="hcGained">Hard Cores gained <span class="unit">HC</span></label>
+        <div class="input-shell"><input type="text" id="hcGained" inputmode="numeric" value="1,000" autocomplete="off" spellcheck="false"></div>
+        <div class="helper">How many HC that energy earned you.</div>
+      </div>
+
+      <div class="field">
+        <label for="energyCost">Energy spent <span class="unit">energy</span></label>
+        <div class="input-shell"><input type="text" id="energyCost" inputmode="numeric" value="20" autocomplete="off" spellcheck="false"></div>
+        <div class="helper">
+          <button type="button" class="chip" data-fill="energyCost" data-value="12">12</button>
+          <button type="button" class="chip" data-fill="energyCost" data-value="20">20</button>
+          <button type="button" class="chip" data-fill="energyCost" data-value="60">60</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="pricePerHC">Price per HC <span class="unit">USD</span></label>
+        <div class="input-shell"><span class="prefix">$</span><input type="text" id="pricePerHC" class="has-prefix" inputmode="decimal" value="0.000093" autocomplete="off" spellcheck="false"></div>
+        <div class="helper">Defaults to an estimate. Enter your own, or calculate it from a pot below.</div>
+      </div>
+
+      <div class="subpanel">
+        <p class="subpanel-title">Or calculate price per HC from a pot</p>
+        <div class="subgrid">
+          <div class="field" style="margin-bottom:0;">
+            <label for="pot">Prize pot <span class="unit">USD</span></label>
+            <div class="input-shell"><span class="prefix">$</span><input type="text" id="pot" class="has-prefix" inputmode="numeric" value="" placeholder="0" autocomplete="off" spellcheck="false"></div>
+            <div class="helper">
+              <button type="button" class="chip" data-fill="pot" data-value="40000">40k</button>
+              <button type="button" class="chip" data-fill="pot" data-value="45000">45k</button>
+              <button type="button" class="chip" data-fill="pot" data-value="50000">50k</button>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="totalHC">Total HC <span class="unit">HC in play</span></label>
+            <div class="input-shell"><input type="text" id="totalHC" inputmode="numeric" value="" placeholder="0" autocomplete="off" spellcheck="false"></div>
+            <div class="helper">Fill both to overwrite price per HC.</div>
+          </div>
+        </div>
+        <p class="computed-note" id="potNote" hidden>= <b id="potNoteVal">$0.000000</b> per HC — overwriting the field above.</p>
+      </div>
+    </section>
+
+    <div class="results">
+      <div class="hero">
+        <p class="hero-label">Value per energy</p>
+        <p class="payout" id="outPerEnergy">$0.000000</p>
+        <p class="payout-sub" id="outFormula">1,000 HC × $0.000093/HC ÷ 20 energy</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><p class="k">Total value earned</p><p class="v" id="outTotalValue">$0.00</p><p class="note">HC gained × price per HC</p></div>
+        <div class="stat"><p class="k">HC per energy</p><p class="v gold" id="outHCperEnergy">0.00</p><p class="note">HC gained ÷ energy spent</p></div>
+      </div>
+
+      <section class="card card-pad" aria-label="How this works">
+        <h2 class="panel-title">How this works</h2>
+        <p class="assumption">
+          <b>Value per energy = (Hard Cores gained × price per HC) ÷ energy spent.</b> Price per HC defaults to an estimate of the final payout rate; fill in a prize pot and total HC below it to compute price per HC as <code style="font-family:'IBM Plex Mono',monospace;background:var(--surface-2);border:1px solid var(--line);padding:1px 6px;border-radius:6px;">pot ÷ total HC</code> instead — handy for testing different end-of-event scenarios. See the <a href="calculator.html" style="color:var(--gold);">HC Estimator</a> for the fuller box-cost model this price comes from.
+        </p>
+      </section>
+    </div>
+  </div>
+
+  <div class="compare-note">More comparisons coming: this will grow into a side-by-side of Hard Cores against other ways to spend energy, so the value-per-energy numbers above line up against each other directly.</div>
+
+  <footer>
+    <span>Part of the <a href="index.html">Gigaverse Awakening Tracker</a>.</span>
+    <span>An estimate, not financial advice.</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var el = function (id) { return document.getElementById(id); };
+  var f = { hcGained: el("hcGained"), energyCost: el("energyCost"), pricePerHC: el("pricePerHC"), pot: el("pot"), totalHC: el("totalHC") };
+
+  function parseNum(v) { var n = parseFloat(String(v).replace(/[^0-9.]/g, "")); return isFinite(n) ? n : 0; }
+  function commaInt(n) { return Math.round(n).toLocaleString("en-US"); }
+  function usd(n) { return n.toLocaleString("en-US", { style:"currency", currency:"USD", minimumFractionDigits:2, maximumFractionDigits:2 }); }
+  function usdPrecise(n) { return "$" + n.toFixed(n < 0.001 ? 6 : 4); }
+
+  function liveComma(input) {
+    var start = input.selectionStart;
+    var digitsBefore = input.value.slice(0, start).replace(/[^0-9]/g, "").length;
+    var digits = input.value.replace(/[^0-9]/g, "");
+    var formatted = digits ? parseInt(digits, 10).toLocaleString("en-US") : "";
+    if (formatted === input.value) return;
+    input.value = formatted;
+    var pos = 0, seen = 0;
+    while (pos < formatted.length && seen < digitsBefore) { var cc = formatted.charCodeAt(pos); if (cc >= 48 && cc <= 57) seen++; pos++; }
+    try { input.setSelectionRange(pos, pos); } catch (e) {}
+  }
+
+  function calc() {
+    var hc = parseNum(f.hcGained.value);
+    var energy = parseNum(f.energyCost.value);
+
+    // Pot ÷ total HC overwrites price per HC whenever both are present.
+    var pot = parseNum(f.pot.value), totalHC = parseNum(f.totalHC.value);
+    if (pot > 0 && totalHC > 0) {
+      var computed = pot / totalHC;
+      f.pricePerHC.value = computed.toFixed(6);
+      el("potNote").hidden = false;
+      el("potNoteVal").textContent = usdPrecise(computed);
+    } else {
+      el("potNote").hidden = true;
+    }
+
+    var price = parseFloat(f.pricePerHC.value) || 0;
+    var totalValue = hc * price;
+    var perEnergy = energy > 0 ? totalValue / energy : 0;
+    var hcPerEnergy = energy > 0 ? hc / energy : 0;
+
+    el("outPerEnergy").textContent = usdPrecise(perEnergy);
+    el("outFormula").innerHTML = commaInt(hc) + " HC × " + usdPrecise(price) + "/HC ÷ " + commaInt(energy) + " energy";
+    el("outTotalValue").textContent = usd(totalValue);
+    el("outHCperEnergy").textContent = hcPerEnergy.toLocaleString("en-US", { minimumFractionDigits:2, maximumFractionDigits:2 });
+  }
+
+  Object.keys(f).forEach(function (k) { f[k].addEventListener("input", calc); });
+  f.hcGained.addEventListener("input", function () { liveComma(f.hcGained); });
+  f.totalHC.addEventListener("input", function () { liveComma(f.totalHC); });
+  f.pot.addEventListener("input", function () { liveComma(f.pot); });
+  f.hcGained.addEventListener("blur", function () { if (f.hcGained.value.trim()) f.hcGained.value = commaInt(parseNum(f.hcGained.value)); });
+  f.totalHC.addEventListener("blur", function () { if (f.totalHC.value.trim()) f.totalHC.value = commaInt(parseNum(f.totalHC.value)); });
+  f.pot.addEventListener("blur", function () { if (f.pot.value.trim()) f.pot.value = commaInt(parseNum(f.pot.value)); });
+
+  document.querySelectorAll(".chip[data-fill]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var target = f[btn.dataset.fill];
+      target.value = commaInt(+btn.dataset.value);
+      calc();
+    });
+  });
+
+  calc();
+})();
+</script>
+</body>
+</html>
