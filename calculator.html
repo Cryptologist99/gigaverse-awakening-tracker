@@ -289,8 +289,11 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   "use strict";
   var API_POT = "https://gigaverse.io/api/itempools/public";
   var API_LB  = "https://gigaverse.io/api/leaderboard/id/8";
-  var CSV_LB  = "data/leaderboard_history.csv";
-  var CSV_POT = "data/pot_history.csv";
+  // Fetched from GitHub raw (CORS-open) instead of same-origin, so cron pushes don't have to
+  // trigger a full Vercel redeploy to stay fresh — Vercel now skips data-only pushes entirely.
+  var RAW_BASE = "https://raw.githubusercontent.com/Cryptologist99/gigaverse-awakening-tracker/main/";
+  var CSV_LB  = RAW_BASE + "data/leaderboard_history.csv";
+  var CSV_POT = RAW_BASE + "data/pot_history.csv";
 
   var el = function (id) { return document.getElementById(id); };
   var f = { boxCost: el("boxCost"), yourHC: el("yourHC"), jackpot: el("jackpot"), totalHC: el("totalHC") };
@@ -551,7 +554,7 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   el("hcAggressive").addEventListener("click", function () { f.totalHC.value = fmtInt(444000000); touched.totalHC = true; calc(); });
 
   // recent-momentum projection rates (server-computed); refresh chips once loaded
-  fetch("data/projection.json", { cache: "no-store" })
+  fetch(RAW_BASE + "data/projection.json", { cache: "no-store" })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (p) { if (p) { PROJ = p; applyStateToUI(); } })
     .catch(function () {});

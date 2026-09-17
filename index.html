@@ -233,7 +233,9 @@
 <script>
 (function () {
   "use strict";
-  var JSON_URL = "data/leaderboard_daily.json";
+  // Fetched from GitHub raw (CORS-open) instead of same-origin, so cron pushes don't have to
+  // trigger a full Vercel redeploy to stay fresh — Vercel now skips data-only pushes entirely.
+  var JSON_URL = "https://raw.githubusercontent.com/Cryptologist99/gigaverse-awakening-tracker/main/data/leaderboard_daily.json";
   var API_POT = "https://gigaverse.io/api/itempools/public";
   var API_LB  = "https://gigaverse.io/api/leaderboard/id/8";
   var EVENT_END = Date.UTC(2026, 9, 9, 18, 0, 0) / 1000; // Oct 9 2026 18:00 UTC

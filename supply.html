@@ -396,7 +396,10 @@ async function load() {
   if (loading) return;
   loading = true;
   try {
-    const res = await fetch('data/ring_aggregate.json?_=' + Date.now(), { cache: 'no-store' });
+    // Fetched from GitHub raw (CORS-open) instead of same-origin, so the 30-min market-refresh
+    // cron doesn't have to trigger a full Vercel redeploy to stay fresh.
+    const RAW_BASE = 'https://raw.githubusercontent.com/Cryptologist99/gigaverse-awakening-tracker/main/';
+    const res = await fetch(RAW_BASE + 'data/ring_aggregate.json?_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     RAW = await res.json();
     document.getElementById('srcDot').className = 'dot';

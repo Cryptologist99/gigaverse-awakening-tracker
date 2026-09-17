@@ -3,3 +3,4 @@ requirements.txt
 analysis
 .github
 backup
+data/ring_holders_top.csv
