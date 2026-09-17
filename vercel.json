@@ -1,4 +1,4 @@
 {
   "framework": null,
-  "ignoreCommand": "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- . ':(exclude)data/**'"
+  "ignoreCommand": "bash -c 'git fetch --deepen=5 --quiet || true; if git rev-parse HEAD^ >/dev/null 2>&1; then git diff --quiet HEAD^ HEAD -- . \":(exclude)data/**\"; else exit 1; fi'"
 }
