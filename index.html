@@ -333,8 +333,23 @@
       + '</span>';
   }
 
-  // ---- Per-player daily HC chart (lazy-loaded, cached parse of leaderboard_history.csv) ----
-  function loadHistory() {
+  // ---- Per-player daily HC chart ----
+  // Primary source: data/player_daily_history.json, a compact digest built server-side by
+  // build_player_history.py (username -> one number per date, no wallets, ~450KB vs the raw
+  // history CSV's ~20MB+). Falls back to fetching and parsing the full CSV client-side if the
+  // digest isn't available for any reason — slower (~20s) but always present, since it's the
+  // tracker's original raw data and was the only source before this digest existed.
+  var COMPACT_HISTORY_URL = RAW_BASE + "data/player_daily_history.json";
+  var compactHistoryPromise = null;
+  function loadCompactHistory() {
+    if (compactHistoryPromise) return compactHistoryPromise;
+    compactHistoryPromise = fetch(COMPACT_HISTORY_URL, { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+    return compactHistoryPromise;
+  }
+  function loadHistoryFallback() {
     if (historyPromise) return historyPromise;
     historyPromise = fetch(HISTORY_CSV, { cache: "no-store" }).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
@@ -356,9 +371,10 @@
     return historyPromise;
   }
   // Buckets snapshots (twice daily) down to one end-of-day value per UTC calendar date, then
-  // diffs consecutive days into a "daily HC gained" series.
-  function dailySeriesFor(name) {
-    return loadHistory().then(function (byName) {
+  // diffs consecutive days into a "daily HC gained" series. Only used by the CSV fallback path
+  // — the compact digest already ships pre-diffed gains.
+  function dailySeriesForFallback(name) {
+    return loadHistoryFallback().then(function (byName) {
       var rows = byName[name];
       if (!rows || !rows.length) return [];
       rows.sort(function (a, b) { return a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0; });
@@ -374,6 +390,17 @@
         series.push({ date: order[j], gained: prev == null ? null : cur - prev });
       }
       return series;
+    });
+  }
+  function dailySeriesFor(name) {
+    return loadCompactHistory().then(function (digest) {
+      var dates = digest.dates || [];
+      var series = (digest.players && digest.players[name]) || [];
+      var out = [];
+      for (var i = 0; i < series.length; i++) out.push({ date: dates[i], gained: series[i] });
+      return out;
+    }).catch(function () {
+      return dailySeriesForFallback(name);
     });
   }
   // Compact number for on-chart labels (exact value still shown in the hover title).
@@ -407,7 +434,7 @@
     for (var i = 0; i < wraps.length; i++) {
       (function (wrapEl) {
         var name = wrapEl.getAttribute("data-name");
-        wrapEl.innerHTML = '<p class="pchart-loading">Loading full player history (~20MB, first time only — a few seconds)…</p>';
+        wrapEl.innerHTML = '<p class="pchart-loading">Loading history…</p>';
         dailySeriesFor(name).then(function (series) { renderChart(wrapEl, series); })
           .catch(function (e) { wrapEl.innerHTML = '<p class="pchart-empty">Couldn\'t load history — ' + esc(e.message) + '.</p>'; });
       })(wraps[i]);
