@@ -339,6 +339,9 @@
   // history CSV's ~20MB+). Falls back to fetching and parsing the full CSV client-side if the
   // digest isn't available for any reason — slower (~20s) but always present, since it's the
   // tracker's original raw data and was the only source before this digest existed.
+  // 2026-08-29 has roughly 2x a normal day's row count (looks like duplicate/retry snapshot
+  // runs, not one clean snapshot) — excluded here to match build_player_history.py.
+  var HISTORY_EXCLUDE_DATES = { "2026-08-29": true };
   var COMPACT_HISTORY_URL = RAW_BASE + "data/player_daily_history.json";
   var compactHistoryPromise = null;
   function loadCompactHistory() {
@@ -363,7 +366,7 @@
         var parts = line.split(",");
         if (parts.length < 5) continue;
         var ts = parts[0], username = parts[3], hc = +parts[4];
-        if (!username || !isFinite(hc)) continue;
+        if (!username || !isFinite(hc) || HISTORY_EXCLUDE_DATES[ts.slice(0, 10)]) continue;
         (byName[username] || (byName[username] = [])).push({ ts: ts, hc: hc });
       }
       return byName;
@@ -376,7 +379,7 @@
   function dailySeriesForFallback(name) {
     return loadHistoryFallback().then(function (byName) {
       var rows = byName[name];
-      if (!rows || !rows.length) return [];
+      if (!rows || !rows.length) return { points: [], start: null };
       rows.sort(function (a, b) { return a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0; });
       var byDate = {}, order = [];
       for (var i = 0; i < rows.length; i++) {
@@ -384,21 +387,21 @@
         if (!(date in byDate)) order.push(date);
         byDate[date] = rows[i].hc; // last snapshot of the day wins
       }
-      var series = [];
+      var points = [];
       for (var j = 0; j < order.length; j++) {
         var cur = byDate[order[j]], prev = j > 0 ? byDate[order[j - 1]] : null;
-        series.push({ date: order[j], gained: prev == null ? null : cur - prev });
+        points.push({ date: order[j], gained: prev == null ? null : cur - prev });
       }
-      return series;
+      return { points: points, start: order[0] || null };
     });
   }
   function dailySeriesFor(name) {
     return loadCompactHistory().then(function (digest) {
       var dates = digest.dates || [];
       var series = (digest.players && digest.players[name]) || [];
-      var out = [];
-      for (var i = 0; i < series.length; i++) out.push({ date: dates[i], gained: series[i] });
-      return out;
+      var points = [];
+      for (var i = 0; i < series.length; i++) points.push({ date: dates[i], gained: series[i] });
+      return { points: points, start: (digest.starts && digest.starts[name]) || null };
     }).catch(function () {
       return dailySeriesForFallback(name);
     });
@@ -411,16 +414,26 @@
     else s = String(Math.round(abs));
     return (n >= 0 ? "+" : "−") + s;
   }
-  function renderChart(container, series) {
+  function renderChart(container, series, startDate) {
     var pts = series.filter(function (s) { return s.gained != null; });
     if (!pts.length) { container.innerHTML = '<p class="pchart-empty">Not enough history yet for a daily chart.</p>'; return; }
     var max = Math.max.apply(null, pts.map(function (s) { return Math.abs(s.gained); })) || 1;
-    var cols = pts.map(function (s) {
+    var cols = pts.map(function (s, i) {
       var h = Math.max(2, Math.round(Math.abs(s.gained) / max * 100));
       var d = new Date(s.date + "T00:00:00Z");
       var dayLabel = d.toLocaleDateString(undefined, { month: "numeric", day: "numeric", timeZone: "UTC" });
       var fullLabel = d.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
-      var title = esc(fullLabel) + ": " + (s.gained >= 0 ? "+" : "−") + commaInt(Math.abs(s.gained)) + " HC";
+      // A skipped/missing date between two plotted days (e.g. the excluded 8/29) means this
+      // bar's number actually spans more than one day — flag that in the tooltip so it isn't
+      // read as a single day's gain. startDate covers the very first bar, whose "previous"
+      // day is the player's join date rather than another point in pts.
+      var spanNote = "";
+      var prevDate = i > 0 ? pts[i - 1].date : startDate;
+      if (prevDate) {
+        var gapDays = Math.round((d - new Date(prevDate + "T00:00:00Z")) / 86400000);
+        if (gapDays > 1) spanNote = " (spans " + gapDays + " days, no snapshot in between)";
+      }
+      var title = esc(fullLabel) + ": " + (s.gained >= 0 ? "+" : "−") + commaInt(Math.abs(s.gained)) + " HC" + esc(spanNote);
       return '<div class="barcol" title="' + title + '">'
         + '<span class="barval">' + esc(fmtCompact(s.gained)) + '</span>'
         + '<div class="bartrack"><div class="bar' + (s.gained < 0 ? " down" : "") + '" style="height:' + h + '%"></div></div>'
@@ -435,7 +448,7 @@
       (function (wrapEl) {
         var name = wrapEl.getAttribute("data-name");
         wrapEl.innerHTML = '<p class="pchart-loading">Loading history…</p>';
-        dailySeriesFor(name).then(function (series) { renderChart(wrapEl, series); })
+        dailySeriesFor(name).then(function (result) { renderChart(wrapEl, result.points, result.start); })
           .catch(function (e) { wrapEl.innerHTML = '<p class="pchart-empty">Couldn\'t load history — ' + esc(e.message) + '.</p>'; });
       })(wraps[i]);
     }

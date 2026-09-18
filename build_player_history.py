@@ -20,6 +20,11 @@ DATA = Path(__file__).parent / "data"
 LB = DATA / "leaderboard_history.csv"
 OUT = DATA / "player_daily_history.json"
 
+# 2026-08-29 has ~2x the row count of a normal day (looks like duplicate/retry snapshot
+# runs, not one clean snapshot) and isn't reliable — skip it entirely so it can't corrupt
+# a day's gained value or the following day's diff.
+EXCLUDE_DATES = {"2026-08-29"}
+
 def main():
     # username -> {date: hc}; CSV rows are chronological (append-only), so the last
     # write for a given date is that date's last snapshot.
@@ -30,6 +35,8 @@ def main():
             if not name:
                 continue
             date = r["timestamp_utc"][:10]
+            if date in EXCLUDE_DATES:
+                continue
             try:
                 hc = int(r["hard_cores"])
             except ValueError:
@@ -40,9 +47,13 @@ def main():
     date_index = {d: i for i, d in enumerate(all_dates)}
 
     players = {}
+    starts = {}  # name -> first-appearance date, so the client can flag a gap on a
+                 # player's very first plotted bar too (e.g. joined 8/28, first real bar
+                 # is 8/30 because 8/29 is excluded — that's a 2-day span, not one day).
     for name, by_date in by_name.items():
         series = [None] * len(all_dates)
         sorted_dates = sorted(by_date.keys())
+        starts[name] = sorted_dates[0]
         for i, d in enumerate(sorted_dates):
             if i == 0:
                 continue  # first day this player appears has no prior value to diff against
@@ -53,6 +64,7 @@ def main():
     out = {
         "generatedAt": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "dates": all_dates,
+        "starts": starts,
         "players": players,
     }
     with OUT.open("w", encoding="utf-8") as f:
