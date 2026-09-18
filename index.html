@@ -145,6 +145,19 @@
   .avgd { font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink-faint); }
   .empty { padding:26px 14px; text-align:center; color:var(--ink-faint); }
 
+  .momcell { font-family:"IBM Plex Mono",monospace; font-size:.8rem; white-space:nowrap; }
+  .momcell .mup { color:var(--up); cursor:help; }
+  .momcell .mdown { color:var(--down); margin-left:7px; cursor:help; }
+  tbody tr.playerrow { cursor:pointer; }
+  tr.expand-row td { background:var(--surface-2); padding:16px 18px; }
+  .pchart-title { font-size:.78rem; color:var(--ink-soft); margin:0 0 8px; font-weight:600; }
+  .pchart { display:flex; align-items:flex-end; gap:3px; height:90px; }
+  .pchart .bar { flex:1 1 0; min-width:3px; max-width:20px; background:var(--up); border-radius:2px 2px 0 0; opacity:.85; cursor:default; }
+  .pchart .bar:hover { opacity:1; }
+  .pchart .bar.down { background:var(--down); }
+  .pchart-loading, .pchart-empty { font-size:.82rem; color:var(--ink-faint); margin:0; }
+  .uname .caret { color:var(--ink-faint); font-size:.85em; margin-right:2px; }
+
   footer { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
   footer a { color:var(--gold); text-decoration:none; }
 </style>
@@ -217,9 +230,10 @@
             <th class="num">Hard Cores</th>
             <th class="num" id="colDelta">vs. previous day</th>
             <th class="num">3-day avg</th>
+            <th class="num" title="How many players ranked above you are averaging fewer HC/day than you (you're closing the gap), and how many ranked below you are averaging more (they're closing the gap on you). Click a row to see its daily HC history.">Momentum</th>
           </tr>
         </thead>
-        <tbody id="tbody"><tr><td class="empty" colspan="6">Loading leaderboard…</td></tr></tbody>
+        <tbody id="tbody"><tr><td class="empty" colspan="7">Loading leaderboard…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -236,6 +250,8 @@
   // Fetched from GitHub raw (CORS-open) instead of same-origin, so cron pushes don't have to
   // trigger a full Vercel redeploy to stay fresh — Vercel now skips data-only pushes entirely.
   var JSON_URL = "https://raw.githubusercontent.com/Cryptologist99/gigaverse-awakening-tracker/main/data/leaderboard_daily.json";
+  var RAW_BASE = "https://raw.githubusercontent.com/Cryptologist99/gigaverse-awakening-tracker/main/";
+  var HISTORY_CSV = RAW_BASE + "data/leaderboard_history.csv";
   var API_POT = "https://gigaverse.io/api/itempools/public";
   var API_LB  = "https://gigaverse.io/api/leaderboard/id/8";
   var EVENT_END = Date.UTC(2026, 9, 9, 18, 0, 0) / 1000; // Oct 9 2026 18:00 UTC
@@ -246,6 +262,8 @@
   var DAILY_DATA = null; // last-loaded daily digest — used as the comparison baseline in live mode
   var MODE = "daily";
   var showAll = false, countdownTimer = null, liveLoading = false;
+  var expanded = {}; // name -> true, rows with an open daily-history chart
+  var historyPromise = null; // cached parse of leaderboard_history.csv, keyed by username
 
   function commaInt(n) { return Math.round(n).toLocaleString("en-US"); }
   function usd(n) { return n == null ? "—" : n.toLocaleString("en-US", { style:"currency", currency:"USD", minimumFractionDigits:2, maximumFractionDigits:2 }); }
@@ -284,6 +302,97 @@
     return '<span class="avgd">' + (v > 0 ? "+" : "−") + commaInt(Math.abs(v)) + '</span>';
   }
 
+  // For each player, count how many ranked above have a lower avg/day (you're closing the
+  // gap on them) and how many ranked below have a higher avg/day (they're closing the gap
+  // on you). O(n^2) over the full roster (~5-6k players) — a few hundred ms, run once per
+  // data load, not per render/keystroke.
+  function computeMomentum(players) {
+    var n = players.length;
+    for (var i = 0; i < n; i++) {
+      var pi = players[i];
+      if (pi.avgPerDay == null) { pi.aboveSlower = null; pi.belowFaster = null; continue; }
+      var aboveSlower = 0, belowFaster = 0, j, a;
+      for (j = 0; j < i; j++) { a = players[j].avgPerDay; if (a != null && a < pi.avgPerDay) aboveSlower++; }
+      for (j = i + 1; j < n; j++) { a = players[j].avgPerDay; if (a != null && a > pi.avgPerDay) belowFaster++; }
+      pi.aboveSlower = aboveSlower;
+      pi.belowFaster = belowFaster;
+    }
+  }
+  function momentumCell(p) {
+    if (p.aboveSlower == null || p.belowFaster == null) return '<span class="avgd">—</span>';
+    return '<span class="momcell">'
+      + '<span class="mup" title="' + p.aboveSlower + ' of the players ranked above you are averaging fewer HC/day than you">▲' + p.aboveSlower + '</span>'
+      + '<span class="mdown" title="' + p.belowFaster + ' of the players ranked below you are averaging more HC/day than you">▼' + p.belowFaster + '</span>'
+      + '</span>';
+  }
+
+  // ---- Per-player daily HC chart (lazy-loaded, cached parse of leaderboard_history.csv) ----
+  function loadHistory() {
+    if (historyPromise) return historyPromise;
+    historyPromise = fetch(HISTORY_CSV, { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text();
+    }).then(function (text) {
+      var lines = text.split("\n");
+      var byName = {};
+      for (var i = 1; i < lines.length; i++) {
+        var line = lines[i];
+        if (!line) continue;
+        var parts = line.split(",");
+        if (parts.length < 5) continue;
+        var ts = parts[0], username = parts[3], hc = +parts[4];
+        if (!username || !isFinite(hc)) continue;
+        (byName[username] || (byName[username] = [])).push({ ts: ts, hc: hc });
+      }
+      return byName;
+    });
+    return historyPromise;
+  }
+  // Buckets snapshots (twice daily) down to one end-of-day value per UTC calendar date, then
+  // diffs consecutive days into a "daily HC gained" series.
+  function dailySeriesFor(name) {
+    return loadHistory().then(function (byName) {
+      var rows = byName[name];
+      if (!rows || !rows.length) return [];
+      rows.sort(function (a, b) { return a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0; });
+      var byDate = {}, order = [];
+      for (var i = 0; i < rows.length; i++) {
+        var date = rows[i].ts.slice(0, 10);
+        if (!(date in byDate)) order.push(date);
+        byDate[date] = rows[i].hc; // last snapshot of the day wins
+      }
+      var series = [];
+      for (var j = 0; j < order.length; j++) {
+        var cur = byDate[order[j]], prev = j > 0 ? byDate[order[j - 1]] : null;
+        series.push({ date: order[j], gained: prev == null ? null : cur - prev });
+      }
+      return series;
+    });
+  }
+  function renderChart(container, series) {
+    var pts = series.filter(function (s) { return s.gained != null; });
+    if (!pts.length) { container.innerHTML = '<p class="pchart-empty">Not enough history yet for a daily chart.</p>'; return; }
+    var max = Math.max.apply(null, pts.map(function (s) { return Math.abs(s.gained); })) || 1;
+    var bars = pts.map(function (s) {
+      var h = Math.max(2, Math.round(Math.abs(s.gained) / max * 100));
+      var label = new Date(s.date + "T00:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+      var title = esc(label) + ": " + (s.gained >= 0 ? "+" : "−") + commaInt(Math.abs(s.gained)) + " HC";
+      return '<div class="bar' + (s.gained < 0 ? " down" : "") + '" style="height:' + h + '%" title="' + title + '"></div>';
+    }).join("");
+    container.innerHTML = '<p class="pchart-title">Daily Hard Cores gained</p><div class="pchart">' + bars + '</div>';
+  }
+  function renderExpandedCharts(tb) {
+    var wraps = tb.querySelectorAll(".pchart-wrap");
+    for (var i = 0; i < wraps.length; i++) {
+      (function (wrapEl) {
+        var name = wrapEl.getAttribute("data-name");
+        wrapEl.innerHTML = '<p class="pchart-loading">Loading full player history (~20MB, first time only — a few seconds)…</p>';
+        dailySeriesFor(name).then(function (series) { renderChart(wrapEl, series); })
+          .catch(function (e) { wrapEl.innerHTML = '<p class="pchart-empty">Couldn\'t load history — ' + esc(e.message) + '.</p>'; });
+      })(wraps[i]);
+    }
+  }
+
   function render() {
     var q = el("search").value.trim().toLowerCase();
     var rows = STATE.players;
@@ -291,20 +400,28 @@
     var limit = (q || showAll) ? filtered.length : Math.min(DEFAULT_SHOW, filtered.length);
     var shown = filtered.slice(0, limit);
     var tb = el("tbody");
-    if (!shown.length) { tb.innerHTML = '<tr><td class="empty" colspan="6">No players match “' + esc(q) + '”.</td></tr>'; el("boardNote").innerHTML = ""; return; }
+    if (!shown.length) { tb.innerHTML = '<tr><td class="empty" colspan="7">No players match “' + esc(q) + '”.</td></tr>'; el("boardNote").innerHTML = ""; return; }
     var html = "";
     for (var i = 0; i < shown.length; i++) {
       var p = shown[i];
-      html += '<tr>'
+      var isOpen = !!(p.name && expanded[p.name]);
+      var rowAttrs = p.name ? ' class="playerrow" data-name="' + esc(p.name) + '"' : '';
+      var caret = p.name ? '<span class="caret">' + (isOpen ? "▾" : "▸") + '</span> ' : '';
+      html += '<tr' + rowAttrs + '>'
         + '<td class="num rank">' + p.rank + '</td>'
         + '<td>' + moveCell(p) + '</td>'
-        + '<td>' + (p.name ? '<span class="uname">' + esc(p.name) + '</span>' : '<span class="anon">anon</span>') + '</td>'
+        + '<td>' + (p.name ? '<span class="uname">' + caret + esc(p.name) + '</span>' : '<span class="anon">anon</span>') + '</td>'
         + '<td class="num hc">' + commaInt(p.hc) + '</td>'
         + '<td class="num">' + deltaCell(p.hcDelta) + '</td>'
         + '<td class="num">' + avgCell(p.avgPerDay) + '</td>'
+        + '<td class="num">' + momentumCell(p) + '</td>'
         + '</tr>';
+      if (isOpen) {
+        html += '<tr class="expand-row"><td colspan="7"><div class="pchart-wrap" data-name="' + esc(p.name) + '"></div></td></tr>';
+      }
     }
     tb.innerHTML = html;
+    renderExpandedCharts(tb);
     if (!q && !showAll && filtered.length > DEFAULT_SHOW) {
       el("boardNote").innerHTML = "Showing top " + DEFAULT_SHOW + " of " + commaInt(filtered.length)
         + " — <span class=\"linkish\" id=\"showAll\">show all</span>, or search above.";
@@ -335,6 +452,7 @@
     DAILY_DATA = data;
     el("colDelta").textContent = "vs. previous day";
     STATE.players = data.players || [];
+    computeMomentum(STATE.players);
     var cur = data.current || {}, prev = data.previous || null;
 
     applyTiles(cur, prev, prev ? fmtET(prev.ts) : "—");
@@ -360,7 +478,7 @@
       .catch(function () {
         el("srcDot").className = "dot err";
         el("srcText").innerHTML = "<b>Couldn't load the daily snapshot</b>";
-        el("tbody").innerHTML = '<tr><td class="empty" colspan="6">The daily snapshot file isn\'t available yet. It\'s generated by the tracker\'s twice-daily job.</td></tr>';
+        el("tbody").innerHTML = '<tr><td class="empty" colspan="7">The daily snapshot file isn\'t available yet. It\'s generated by the tracker\'s twice-daily job.</td></tr>';
       });
   }
 
@@ -371,6 +489,7 @@
   function applyLive(agg) {
     el("colDelta").textContent = "since snapshot";
     STATE.players = agg.players;
+    computeMomentum(STATE.players);
     var cur = { pot: agg.pot, totalHC: agg.totalHC, holders: agg.holders, ts: agg.ts };
     var baseline = DAILY_DATA && DAILY_DATA.current ? DAILY_DATA.current : null;
     applyTiles(cur, baseline, baseline ? (fmtET(baseline.ts) + " (last daily snapshot)") : "—");
@@ -451,6 +570,14 @@
   }
 
   el("search").addEventListener("input", render);
+  el("tbody").addEventListener("click", function (e) {
+    var tr = e.target.closest ? e.target.closest("tr.playerrow") : null;
+    if (!tr) return;
+    var name = tr.getAttribute("data-name");
+    if (!name) return;
+    if (expanded[name]) delete expanded[name]; else expanded[name] = true;
+    render();
+  });
   el("modeDaily").addEventListener("click", function () { setMode("daily"); });
   el("modeLive").addEventListener("click", function () { setMode("live"); });
   el("liveRefresh").addEventListener("click", function () { loadLive(); });
