@@ -150,12 +150,17 @@
   .momcell .mdown { color:var(--down); margin-left:7px; cursor:help; }
   tbody tr.playerrow { cursor:pointer; }
   tr.expand-row td { background:var(--surface-2); padding:16px 18px; }
-  .pchart-title { font-size:.78rem; color:var(--ink-soft); margin:0 0 8px; font-weight:600; }
-  .pchart { display:flex; align-items:flex-end; gap:3px; height:90px; }
-  .pchart .bar { flex:1 1 0; min-width:3px; max-width:20px; background:var(--up); border-radius:2px 2px 0 0; opacity:.85; cursor:default; }
+  .pchart-title { font-size:.78rem; color:var(--ink-soft); margin:0 0 10px; font-weight:600; }
+  .pchart { display:flex; align-items:flex-end; gap:4px; overflow-x:auto; padding-bottom:2px; }
+  .pchart .barcol { display:flex; flex-direction:column; align-items:center; width:36px; flex:none; }
+  .pchart .barval { font-size:.6rem; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace; white-space:nowrap; margin-bottom:4px; }
+  .pchart .bartrack { height:90px; width:100%; display:flex; align-items:flex-end; justify-content:center; }
+  .pchart .bar { width:18px; min-height:2px; background:var(--up); border-radius:2px 2px 0 0; opacity:.85; cursor:default; }
   .pchart .bar:hover { opacity:1; }
   .pchart .bar.down { background:var(--down); }
+  .pchart .barlabel { font-size:.6rem; color:var(--ink-faint); margin-top:6px; white-space:nowrap; }
   .pchart-loading, .pchart-empty { font-size:.82rem; color:var(--ink-faint); margin:0; }
+  .th-tip { border-bottom:1px dotted var(--ink-faint); cursor:help; }
   .uname .caret { color:var(--ink-faint); font-size:.85em; margin-right:2px; }
 
   footer { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
@@ -230,7 +235,7 @@
             <th class="num">Hard Cores</th>
             <th class="num" id="colDelta">vs. previous day</th>
             <th class="num">3-day avg</th>
-            <th class="num" title="How many players ranked above you are averaging fewer HC/day than you (you're closing the gap), and how many ranked below you are averaging more (they're closing the gap on you). Click a row to see its daily HC history.">Momentum</th>
+            <th class="num"><span class="th-tip" title="How many players ranked above you are averaging fewer HC/day than you (you're closing the gap), and how many ranked below you are averaging more (they're closing the gap on you). Click a row to see its daily HC history.">Momentum</span></th>
           </tr>
         </thead>
         <tbody id="tbody"><tr><td class="empty" colspan="7">Loading leaderboard…</td></tr></tbody>
@@ -369,17 +374,31 @@
       return series;
     });
   }
+  // Compact number for on-chart labels (exact value still shown in the hover title).
+  function fmtCompact(n) {
+    var abs = Math.abs(n), s;
+    if (abs >= 1000000) s = (abs / 1000000).toFixed(abs >= 10000000 ? 0 : 1) + "M";
+    else if (abs >= 1000) s = (abs / 1000).toFixed(abs >= 10000 ? 0 : 1) + "K";
+    else s = String(Math.round(abs));
+    return (n >= 0 ? "+" : "−") + s;
+  }
   function renderChart(container, series) {
     var pts = series.filter(function (s) { return s.gained != null; });
     if (!pts.length) { container.innerHTML = '<p class="pchart-empty">Not enough history yet for a daily chart.</p>'; return; }
     var max = Math.max.apply(null, pts.map(function (s) { return Math.abs(s.gained); })) || 1;
-    var bars = pts.map(function (s) {
+    var cols = pts.map(function (s) {
       var h = Math.max(2, Math.round(Math.abs(s.gained) / max * 100));
-      var label = new Date(s.date + "T00:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
-      var title = esc(label) + ": " + (s.gained >= 0 ? "+" : "−") + commaInt(Math.abs(s.gained)) + " HC";
-      return '<div class="bar' + (s.gained < 0 ? " down" : "") + '" style="height:' + h + '%" title="' + title + '"></div>';
+      var d = new Date(s.date + "T00:00:00Z");
+      var dayLabel = d.toLocaleDateString(undefined, { month: "numeric", day: "numeric", timeZone: "UTC" });
+      var fullLabel = d.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+      var title = esc(fullLabel) + ": " + (s.gained >= 0 ? "+" : "−") + commaInt(Math.abs(s.gained)) + " HC";
+      return '<div class="barcol" title="' + title + '">'
+        + '<span class="barval">' + esc(fmtCompact(s.gained)) + '</span>'
+        + '<div class="bartrack"><div class="bar' + (s.gained < 0 ? " down" : "") + '" style="height:' + h + '%"></div></div>'
+        + '<span class="barlabel">' + esc(dayLabel) + '</span>'
+        + '</div>';
     }).join("");
-    container.innerHTML = '<p class="pchart-title">Daily Hard Cores gained</p><div class="pchart">' + bars + '</div>';
+    container.innerHTML = '<p class="pchart-title">Daily Hard Cores gained</p><div class="pchart">' + cols + '</div>';
   }
   function renderExpandedCharts(tb) {
     var wraps = tb.querySelectorAll(".pchart-wrap");
