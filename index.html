@@ -102,6 +102,9 @@
   @media (max-width:680px) { .topline { grid-template-columns:repeat(2,1fr); } }
   .tl { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 17px; box-shadow:var(--shadow); }
   .tl .k { font-size:.74rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 7px; font-weight:600; }
+  .burnpit-badge { display:inline-block; font-size:.62rem; letter-spacing:0; text-transform:none; font-weight:600; color:var(--gold);
+    background:var(--gold-bg); border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:1px 6px; border-radius:999px; cursor:help; vertical-align:middle; margin-left:2px; }
+  .burnpit-note { font-size:.78rem; color:var(--ink-faint); margin:-14px 0 20px; font-style:italic; }
   .tl .v { font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:0; line-height:1; }
   .tl .v.gold { color:var(--gold); }
   .tl .d { font-size:.76rem; margin:6px 0 0; font-variant-numeric:tabular-nums; color:var(--ink-faint); }
@@ -200,10 +203,11 @@
 
   <div class="topline">
     <div class="tl"><p class="k">Prize pot</p><p class="v gold" id="tlPot">—</p><p class="d" id="tlPotD"></p></div>
-    <div class="tl"><p class="k">Total Hard Cores</p><p class="v" id="tlHC">—</p><p class="d" id="tlHCD"></p></div>
+    <div class="tl"><p class="k">Total Hard Cores <span class="burnpit-badge" title="Includes +46,200,000 HC from the Burn Pit mechanic (154 items × a 300,000 HC pool each) added 2026-09-21. Not yet individually earned by players — it's a guaranteed additional pool on top of tracked leaderboard HC.">+ Burn Pit</span></p><p class="v" id="tlHC">—</p><p class="d" id="tlHCD"></p></div>
     <div class="tl"><p class="k">Holders</p><p class="v" id="tlHolders">—</p><p class="d" id="tlHoldersD"></p></div>
     <div class="tl"><p class="k">Event ends in</p><p class="v" id="tlEnds">—</p><p class="d">Oct 9, 18:00 UTC</p></div>
   </div>
+  <p class="burnpit-note">Total Hard Cores includes +46,200,000 from the Burn Pit mechanic (154 items × 300,000 HC pool each), added 2026-09-21.</p>
 
   <div class="controls">
     <div class="search">
@@ -263,6 +267,10 @@
   var API_LB  = "https://gigaverse.io/api/leaderboard/id/8";
   var EVENT_END = Date.UTC(2026, 9, 9, 18, 0, 0) / 1000; // Oct 9 2026 18:00 UTC
   var DEFAULT_SHOW = 250;
+  // Burn Pit mechanic (added 2026-09-21): burning items yields HC from a fixed per-item pool
+  // (154 items x 300,000 HC each) — a guaranteed additional pool on top of tracked leaderboard
+  // HC, not yet earned by individual players. Added to the displayed Total Hard Cores tile.
+  var BURN_PIT_HC = 46200000;
 
   var el = function (id) { return document.getElementById(id); };
   var STATE = { players: [] };
@@ -494,7 +502,7 @@
 
   function applyTiles(cur, prev, sinceLabel) {
     el("tlPot").textContent = usd(cur.pot);
-    el("tlHC").textContent = commaInt(cur.totalHC || 0);
+    el("tlHC").textContent = commaInt((cur.totalHC || 0) + BURN_PIT_HC);
     el("tlHolders").textContent = commaInt(cur.holders || 0);
     el("tlPotD").textContent = ""; el("tlHCD").textContent = ""; el("tlHoldersD").textContent = ""; el("mvSince").textContent = "";
 
