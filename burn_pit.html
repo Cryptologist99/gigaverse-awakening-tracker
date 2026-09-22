@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Burn Pit Tracker</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<meta name="description" content="Gigaverse Awakening Burn Pit tracker — which of the 154 eligible items are being burned for Hard Cores, current implied payout rate per item, and which are Ethernal (persisting) items.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg:#ECEBF2; --surface:#F7F6FB; --surface-2:#EFEEF6;
+    --ink:#1B1A28; --ink-soft:#55536A; --ink-faint:#8A889E;
+    --line:#DAD8E6; --line-strong:#C6C3D6;
+    --gold:#A9741E; --gold-bg:#F3E7CE; --teal:#1E8E7E; --danger:#B4472F; --live:#1E8E7E;
+    --up:#1E8E7E; --down:#B4472F; --focus:#7C69C9;
+    --shadow:0 1px 2px rgba(27,26,40,.06),0 12px 32px -12px rgba(27,26,40,.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#100F17; --surface:#1A1926; --surface-2:#221F31;
+      --ink:#ECEAF4; --ink-soft:#ADA9C4; --ink-faint:#746F8C;
+      --line:#2C2A3C; --line-strong:#3B3850;
+      --gold:#E8B85C; --gold-bg:#2A2213; --teal:#46C7B4; --danger:#E88266; --live:#46C7B4;
+      --up:#46C7B4; --down:#E88266; --focus:#A594F0;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#100F17; --surface:#1A1926; --surface-2:#221F31;
+    --ink:#ECEAF4; --ink-soft:#ADA9C4; --ink-faint:#746F8C;
+    --line:#2C2A3C; --line-strong:#3B3850;
+    --gold:#E8B85C; --gold-bg:#2A2213; --teal:#46C7B4; --danger:#E88266; --live:#46C7B4;
+    --up:#46C7B4; --down:#E88266; --focus:#A594F0;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -16px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Instrument Sans",system-ui,-apple-system,sans-serif; font-size:16px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--gold) 10%, transparent) 0%, transparent 55%),
+      radial-gradient(90% 80% at 0% 100%, color-mix(in oklab, var(--focus) 9%, transparent) 0%, transparent 50%);
+    background-attachment:fixed;
+  }
+
+  .topnav { position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding:11px clamp(16px,4vw,48px); background:color-mix(in oklab,var(--surface) 85%,transparent); backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .brand { display:inline-flex; align-items:center; gap:9px; font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:1rem; letter-spacing:-.01em; color:var(--ink); text-decoration:none; }
+  .brand-mark { color:var(--gold); font-size:1.05em; }
+  .navlinks { display:flex; gap:5px; flex-wrap:wrap; }
+  .navlink { font-size:.88rem; font-weight:600; color:var(--ink-soft); text-decoration:none; padding:7px 13px; border-radius:9px; transition:background .15s,color .15s; }
+  .navlink:hover { background:var(--surface-2); color:var(--ink); }
+  .navlink.active { background:var(--gold-bg); color:var(--gold); }
+
+  .wrap { max-width:1080px; margin:0 auto; padding:clamp(20px,4vw,48px); }
+
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
+  .source { display:inline-flex; align-items:center; gap:9px; font-size:.82rem; color:var(--ink-soft);
+    background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 8px 6px 13px; box-shadow:var(--shadow); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--gold); flex:none; }
+  .countdown { font-size:.82rem; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;
+    background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 13px; box-shadow:var(--shadow); }
+  .countdown b { color:var(--gold); }
+
+  header.masthead { margin-bottom:18px; }
+  .eyebrow { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  .eyebrow::before { content:""; width:22px; height:1px; background:var(--gold); display:inline-block; }
+  h1 { font-family:"Bricolage Grotesque","Instrument Sans",sans-serif; font-weight:800; font-size:clamp(1.9rem,5vw,2.9rem); line-height:1.03; letter-spacing:-.02em; margin:0 0 10px; text-wrap:balance; }
+  .lede { color:var(--ink-soft); max-width:70ch; margin:0; font-size:1rem; }
+  .lede b { color:var(--ink); font-weight:600; }
+
+  .snapbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:16px 0 0; font-size:.82rem; color:var(--ink-soft);
+    background:color-mix(in oklab,var(--gold) 8%,var(--surface)); border:1px solid color-mix(in oklab,var(--gold) 26%,var(--line));
+    border-radius:10px; padding:9px 13px; }
+  .snapbar .tag { font-family:"IBM Plex Mono",monospace; font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; font-weight:600;
+    color:var(--gold); background:var(--gold-bg); border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:2px 8px; border-radius:999px; }
+  .snapbar b { color:var(--ink); font-weight:600; }
+
+  .topline { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0 22px; }
+  @media (max-width:680px) { .topline { grid-template-columns:repeat(2,1fr); } }
+  .tl { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 17px; box-shadow:var(--shadow); }
+  .tl .k { font-size:.74rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 7px; font-weight:600; }
+  .tl .v { font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:0; line-height:1; }
+  .tl .v.gold { color:var(--gold); }
+  .tl .d { font-size:.76rem; margin:6px 0 0; font-variant-numeric:tabular-nums; color:var(--ink-faint); }
+
+  .board-title { font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1.15rem; letter-spacing:-.01em; margin:0; }
+  .board-title-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .search { flex:1 1 240px; position:relative; }
+  .search input { width:100%; font-family:"Instrument Sans",sans-serif; font-size:.95rem; color:var(--ink);
+    background:var(--surface-2); border:1.5px solid var(--line-strong); border-radius:10px; padding:10px 13px 10px 34px; }
+  .search input:focus { outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in oklab,var(--focus) 26%,transparent); }
+  .search svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ink-faint); }
+
+  .filterrow { display:inline-flex; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:3px; gap:2px; box-shadow:var(--shadow); }
+  .fbtn { font-family:"IBM Plex Mono",monospace; font-size:.76rem; font-weight:600; color:var(--ink-soft);
+    background:transparent; border:none; border-radius:999px; padding:6px 14px; cursor:pointer; transition:background .15s,color .15s; white-space:nowrap; }
+  .fbtn:hover { color:var(--ink); }
+  .fbtn.active { background:var(--gold-bg); color:var(--gold); }
+
+  .board-note { font-size:.8rem; color:var(--ink-faint); margin:0 0 8px; }
+  .linkish { color:var(--gold); cursor:pointer; text-decoration:none; font-weight:600; }
+  .linkish:hover { text-decoration:underline; }
+
+  .tablewrap { background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:.92rem; }
+  thead th { position:sticky; top:0; background:var(--surface); z-index:1; cursor:pointer; user-select:none;
+    text-align:left; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint); font-weight:600;
+    padding:12px 14px; border-bottom:1px solid var(--line-strong); white-space:nowrap; }
+  thead th:hover { color:var(--ink); }
+  thead th.sorted { color:var(--gold); }
+  th.num, td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  tbody td { padding:11px 14px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover td { background:color-mix(in oklab,var(--gold) 5%,transparent); }
+  .iname { font-weight:600; color:var(--ink); }
+  .num-mono { font-family:"IBM Plex Mono",monospace; color:var(--ink); }
+  .rate { font-family:"IBM Plex Mono",monospace; color:var(--ink-soft); }
+  .empty { padding:26px 14px; text-align:center; color:var(--ink-faint); }
+
+  .ledger-badge { font-family:"IBM Plex Mono",monospace; font-size:.66rem; text-transform:uppercase; letter-spacing:.04em; font-weight:600;
+    padding:2px 8px; border-radius:999px; display:inline-block; }
+  .ledger-badge.eternal { color:var(--gold); background:var(--gold-bg); border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); cursor:help; }
+  .ledger-badge.seasonal { color:var(--ink-soft); background:var(--surface-2); border:1px solid var(--line); }
+  .ledger-badge.unlisted { color:var(--ink-faint); background:var(--surface-2); border:1px solid var(--line); }
+
+  footer { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
+  footer a { color:var(--gold); text-decoration:none; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="index.html"><span class="brand-mark">◆</span> Gigaverse Awakening Tracker</a>
+  <div class="navlinks">
+    <a href="index.html" class="navlink">Leaderboard</a>
+    <a href="calculator.html" class="navlink">HC Estimator</a>
+    <a href="energy.html" class="navlink">Energy Value</a>
+    <a href="supply.html" class="navlink">Supply</a>
+    <a href="burn_pit.html" class="navlink active">Burn Pit</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="source">
+      <span class="dot" id="srcDot"></span>
+      <span id="srcText">Loading…</span>
+    </div>
+    <div class="countdown" id="countdown" hidden></div>
+  </div>
+
+  <header class="masthead">
+    <p class="eyebrow">Gigaverse · The Awakening</p>
+    <h1>Burn Pit Tracker</h1>
+    <p class="lede">Burning an item pays out from a fixed <b>300,000 Hard Core pool per item</b>, split pro-rata among everyone who's burned that item — the more burned, the lower the payout per unit. This tracks all 154 eligible items and their current implied rate.</p>
+    <div class="snapbar" id="snapbar" hidden>
+      <span class="tag">snapshot</span>
+      <span id="snapText"></span>
+    </div>
+  </header>
+
+  <div class="topline">
+    <div class="tl"><p class="k">Budget</p><p class="v gold" id="tlBudget">—</p><p class="d">154 items × 300,000 HC</p></div>
+    <div class="tl"><p class="k">Total burned (units)</p><p class="v" id="tlBurned">—</p><p class="d" id="tlBurnedD"></p></div>
+    <div class="tl"><p class="k">Contributions</p><p class="v" id="tlContrib">—</p><p class="d">unit-burns across all items</p></div>
+    <div class="tl"><p class="k">Closes</p><p class="v" id="tlCloses">—</p><p class="d" id="tlClosesD"></p></div>
+  </div>
+
+  <div class="controls">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="search" placeholder="Search item…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="filterrow" role="tablist" aria-label="Ledger filter">
+      <button type="button" class="fbtn active" data-filter="all">All</button>
+      <button type="button" class="fbtn" data-filter="eternal" title="Normally persists forever across seasons — burning it in the Pit is the one exception.">Ethernal</button>
+      <button type="button" class="fbtn" data-filter="seasonal" title="Would be reset/burned automatically at season end anyway.">Seasonal</button>
+      <button type="button" class="fbtn" data-filter="unlisted" title="Not found in the game's published Seasonal/Ethernal ledger — likely added after that doc was last updated.">Unlisted</button>
+    </div>
+  </div>
+  <p class="board-note" id="boardNote"></p>
+
+  <div class="tablewrap">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="name">Item</th>
+            <th data-sort="ledger">Ledger</th>
+            <th class="num" data-sort="totalBurned">Burned</th>
+            <th class="num" data-sort="contributors">Contributors</th>
+            <th class="num" data-sort="impliedCoresPerUnit">HC / unit (now)</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"><tr><td class="empty" colspan="5">Loading Burn Pit data…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    <span id="footNote">Snapshot captured from the in-game Burn Pit panel (authenticated — no public API exists for this data) · not auto-refreshed yet.</span>
+    <span><a href="index.html">← Back to leaderboard</a></span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var RAW_BASE = "https://raw.githubusercontent.com/Cryptologist99/gigaverse-awakening-tracker/main/";
+  var DATA_URL = RAW_BASE + "data/burn_pit.json";
+
+  var el = function (id) { return document.getElementById(id); };
+  var DATA = null;
+  var filter = "all";
+  var sortKey = "totalBurned", sortDir = -1;
+
+  function commaInt(n) { return Math.round(n).toLocaleString("en-US"); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" })[c]; }); }
+  function fmtRate(v) { return v >= 100 ? commaInt(v) : v.toFixed(2); }
+  function fmtDate(iso) { var d = new Date(iso); return isNaN(d) ? "—" : d.toLocaleString(undefined, { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" }); }
+
+  function startCountdown(closeIso) {
+    var closeAt = new Date(closeIso).getTime() / 1000;
+    var tick = function () {
+      var left = Math.max(0, Math.floor(closeAt - Date.now() / 1000));
+      var d = Math.floor(left/86400), h = Math.floor((left%86400)/3600), m = Math.floor((left%3600)/60);
+      el("countdown").hidden = false;
+      el("countdown").innerHTML = left > 0 ? "Burn Pit closes in <b>" + d + "d " + h + "h " + m + "m</b>" : "<b>Burn Pit closed</b>";
+      el("tlCloses").textContent = left > 0 ? d + "d " + h + "h" : "closed";
+    };
+    tick(); setInterval(tick, 30000);
+  }
+
+  function ledgerBadge(ledger) {
+    if (ledger === "eternal") return '<span class="ledger-badge eternal" title="Normally persists forever across seasons — this is the one chance to burn it for HC.">Ethernal</span>';
+    if (ledger === "seasonal") return '<span class="ledger-badge seasonal">Seasonal</span>';
+    return '<span class="ledger-badge unlisted" title="Not found in the game\'s published Seasonal/Ethernal ledger doc.">Unlisted</span>';
+  }
+
+  function render() {
+    var q = el("search").value.trim().toLowerCase();
+    var rows = DATA.items.filter(function (it) {
+      if (filter !== "all" && it.ledger !== filter) return false;
+      if (q && it.name.toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+    rows.sort(function (a, b) {
+      var av = a[sortKey], bv = b[sortKey];
+      if (typeof av === "string") return sortDir * av.localeCompare(bv);
+      return sortDir * (av - bv);
+    });
+
+    var tb = el("tbody");
+    if (!rows.length) { tb.innerHTML = '<tr><td class="empty" colspan="5">No items match.</td></tr>'; el("boardNote").textContent = ""; return; }
+    var html = "";
+    for (var i = 0; i < rows.length; i++) {
+      var it = rows[i];
+      html += '<tr>'
+        + '<td class="iname">' + esc(it.name) + '</td>'
+        + '<td>' + ledgerBadge(it.ledger) + '</td>'
+        + '<td class="num num-mono">' + commaInt(it.totalBurned) + '</td>'
+        + '<td class="num num-mono">' + commaInt(it.contributors) + '</td>'
+        + '<td class="num rate">' + fmtRate(it.impliedCoresPerUnit) + '</td>'
+        + '</tr>';
+    }
+    tb.innerHTML = html;
+    el("boardNote").textContent = "Showing " + commaInt(rows.length) + " of " + commaInt(DATA.items.length) + " items.";
+  }
+
+  function applyData(data) {
+    DATA = data;
+    el("tlBudget").textContent = commaInt(data.budgetCores) + " HC";
+    var totalBurned = 0, totalContrib = 0;
+    data.items.forEach(function (it) { totalBurned += it.totalBurned; totalContrib += it.contributors; });
+    el("tlBurned").textContent = commaInt(totalBurned);
+    el("tlBurnedD").textContent = data.itemCount + " items tracked";
+    el("tlContrib").textContent = commaInt(totalContrib);
+
+    el("srcDot").className = "dot";
+    el("srcText").innerHTML = "Snapshot <b>" + fmtDate(data.capturedAt) + "</b>";
+    el("snapbar").hidden = false;
+    el("snapText").innerHTML = "Captured " + fmtDate(data.capturedAt) + " from the authenticated in-game Burn Pit panel — no public API exists for this data, so it updates only when manually refreshed. Frozen item list as of " + fmtDate(data.frozenAt) + ".";
+    el("tlClosesD").textContent = fmtDate(data.closeAt) + " (before the main event ends)";
+    startCountdown(data.closeAt);
+    render();
+  }
+
+  function load() {
+    el("srcText").innerHTML = "<b>Loading…</b>";
+    fetch(DATA_URL, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(applyData)
+      .catch(function (e) {
+        el("srcDot").className = "dot err";
+        el("srcText").innerHTML = "<b>Couldn't load Burn Pit data</b>";
+        el("tbody").innerHTML = '<tr><td class="empty" colspan="5">Couldn\'t load data — ' + esc(e.message) + '.</td></tr>';
+      });
+  }
+
+  el("search").addEventListener("input", render);
+  document.querySelectorAll(".fbtn").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll(".fbtn").forEach(function (x) { x.classList.remove("active"); });
+      b.classList.add("active");
+      filter = b.dataset.filter;
+      render();
+    });
+  });
+  document.querySelectorAll("thead th[data-sort]").forEach(function (th) {
+    th.addEventListener("click", function () {
+      var key = th.dataset.sort;
+      if (sortKey === key) sortDir = -sortDir; else { sortKey = key; sortDir = key === "name" ? 1 : -1; }
+      document.querySelectorAll("thead th").forEach(function (x) { x.classList.remove("sorted"); });
+      th.classList.add("sorted");
+      render();
+    });
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
