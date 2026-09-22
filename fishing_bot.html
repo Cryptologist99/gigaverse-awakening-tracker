@@ -82,6 +82,12 @@
   .steps li:last-child { margin-bottom:0; }
   code { font-family:"IBM Plex Mono",monospace; font-size:.88em; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--ink); }
 
+  .usage-note { display:flex; gap:12px; background:var(--gold-bg); border:1px solid color-mix(in oklab,var(--gold) 30%,transparent);
+    border-radius:14px; padding:16px 18px; margin-top:14px; }
+  .usage-note .icon { flex:none; color:var(--gold); font-size:1.1rem; line-height:1.4; }
+  .usage-note p { margin:0; color:var(--ink); font-size:.88rem; line-height:1.55; }
+  .usage-note b { color:var(--gold); }
+
   footer { margin-top:26px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
   footer a { color:var(--gold); text-decoration:none; } footer a:hover { text-decoration:underline; }
   .tipline { margin-top:10px; font-size:.78rem; color:var(--ink-faint); text-align:center; }
@@ -119,6 +125,11 @@
     <p><b>Getting it running:</b> the fastest way to set this up is to point your own coding LLM (Claude, ChatGPT, Cursor, etc.) at the repository and let it figure out the setup for your machine. Something like:</p>
     <p><code>Clone https://github.com/Cryptologist99/gigaverse-fishing-bot, read the README, and get it running for me.</code></p>
     <p>The repo's README and code comments have everything a coding assistant needs — dependencies, config, and how to start a run.</p>
+  </div>
+
+  <div class="usage-note">
+    <span class="icon">⚠</span>
+    <p><b>Personal use is fine.</b> If you want to run this for yourself, go ahead. If you're using it to make money — running it as a service, for clients, or at scale for profit — reach out to Cryptologist first and ask.</p>
   </div>
 
   <footer>
