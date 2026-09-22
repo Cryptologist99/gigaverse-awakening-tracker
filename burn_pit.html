@@ -174,7 +174,7 @@
     <div class="tl"><p class="k">Closes</p><p class="v" id="tlCloses">—</p><p class="d" id="tlClosesD"></p></div>
   </div>
 
-  <p class="col-explain"><b>HC/Unit Now</b> is the pool split across units burned so far. <b>HC/Unit Min</b> is the floor rate if the entire circulating supply eventually got burned — since the rate only ever falls as more gets burned, this is probably closer to what you'll actually end up getting than "now" is. <b>Cost/HC</b> divides the giga.market floor price by each of those rates, i.e. what you'd pay per HC if you bought the item to burn it.</p>
+  <p class="col-explain"><b>HC/Unit Now</b> is the pool split across units burned so far. <b>HC/Unit Min</b> is the floor rate if the entire circulating supply eventually got burned — since the rate only ever falls as more gets burned, this is probably closer to what you'll actually end up getting than "now" is. <b>Cost/1000 HC</b> divides the giga.market floor price by each of those rates (× 1000), i.e. what you'd pay per 1,000 HC if you bought the item to burn it.</p>
 
   <div class="controls">
     <div class="search">
@@ -184,7 +184,7 @@
     <label class="checkfilter"><input type="checkbox" id="hideMats"> Hide Juices/Oils/Dusts/Shards</label>
   </div>
   <p class="board-note" id="boardNote"></p>
-  <p class="scroll-hint" id="scrollHint" hidden>↔ Scroll the table sideways for more columns (Cost/HC, etc.)</p>
+  <p class="scroll-hint" id="scrollHint" hidden>↔ Scroll the table sideways for more columns (Cost/1000 HC, etc.)</p>
 
   <div class="tablewrap">
     <div class="scroll">
@@ -197,8 +197,8 @@
             <th class="num" data-sort="totalBurned">Burned</th>
             <th class="num" data-sort="impliedCoresPerUnit" title="Pool ÷ units burned so far.">HC/Unit Now</th>
             <th class="num" data-sort="minHcPerUnit" title="Pool ÷ total circulating supply — the floor rate if everyone burned everything.">HC/Unit Min</th>
-            <th class="num" data-sort="costPerHcNow" title="Floor $ ÷ HC/Unit Now.">Cost/HC Now</th>
-            <th class="num" data-sort="costPerHcMin" title="Floor $ ÷ HC/Unit Min — worst-case cost per HC.">Cost/HC Min</th>
+            <th class="num" data-sort="costPerHcNow" title="Floor $ ÷ HC/Unit Now × 1000.">Cost/1000 HC Now</th>
+            <th class="num" data-sort="costPerHcMin" title="Floor $ ÷ HC/Unit Min × 1000 — worst-case cost.">Cost/1000 HC Min</th>
           </tr>
         </thead>
         <tbody id="tbody"><tr><td class="empty" colspan="8">Loading Burn Pit data…</td></tr></tbody>
@@ -286,8 +286,8 @@
     var items = burnpit.items.map(function (it) {
       var m = marketItems[String(it.itemId)] || {};
       var minHcPerUnit = (m.totalSupply && m.totalSupply > 0) ? it.poolCores / m.totalSupply : null;
-      var costPerHcNow = (m.floorUsd != null && it.impliedCoresPerUnit > 0) ? m.floorUsd / it.impliedCoresPerUnit : null;
-      var costPerHcMin = (m.floorUsd != null && minHcPerUnit > 0) ? m.floorUsd / minHcPerUnit : null;
+      var costPerHcNow = (m.floorUsd != null && it.impliedCoresPerUnit > 0) ? (m.floorUsd / it.impliedCoresPerUnit) * 1000 : null;
+      var costPerHcMin = (m.floorUsd != null && minHcPerUnit > 0) ? (m.floorUsd / minHcPerUnit) * 1000 : null;
       return Object.assign({}, it, {
         totalSupply: m.totalSupply != null ? m.totalSupply : null,
         floorEth: m.floorEth != null ? m.floorEth : null,
