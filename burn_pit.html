@@ -134,6 +134,8 @@
 
   footer { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
   footer a { color:var(--gold); text-decoration:none; }
+  .tipline { margin-top:10px; font-size:.78rem; color:var(--ink-faint); text-align:center; }
+  .tipline a { color:var(--gold); text-decoration:none; } .tipline a:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -145,6 +147,8 @@
     <a href="energy.html" class="navlink">Energy Value</a>
     <a href="supply.html" class="navlink">Supply</a>
     <a href="burn_pit.html" class="navlink active">Burn Pit</a>
+    <a href="fishing_bot.html" class="navlink">Fishing Bot</a>
+    <a href="tip.html" class="navlink">Tip</a>
   </div>
 </nav>
 
@@ -210,6 +214,7 @@
     <span id="footNote">Burn stats: manual snapshot from the in-game Burn Pit panel (authenticated, no public API). Supply/floor price: giga.market + Gigaverse item indexer, refreshed by the tracker's cron.</span>
     <span><a href="index.html">← Back to leaderboard</a></span>
   </footer>
+  <p class="tipline">Finding the tools here useful? <a href="tip.html">Send cryptologist a tip</a>.</p>
 </div>
 
 <script>
