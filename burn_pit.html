@@ -101,7 +101,10 @@
   .search input:focus { outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in oklab,var(--focus) 26%,transparent); }
   .search svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ink-faint); }
 
+  .checkfilter { display:inline-flex; align-items:center; gap:7px; font-size:.85rem; color:var(--ink-soft); cursor:pointer; white-space:nowrap; }
+  .checkfilter input { width:16px; height:16px; accent-color:var(--gold); cursor:pointer; }
   .board-note { font-size:.8rem; color:var(--ink-faint); margin:0 0 8px; }
+  .scroll-hint { font-size:.78rem; color:var(--gold); margin:0 0 8px; font-style:italic; }
   .linkish { color:var(--gold); cursor:pointer; text-decoration:none; font-weight:600; }
   .linkish:hover { text-decoration:underline; }
 
@@ -109,12 +112,13 @@
   .scroll { overflow-x:auto; }
   table { width:100%; border-collapse:collapse; font-size:.92rem; }
   thead th { position:sticky; top:0; background:var(--surface); z-index:1; cursor:pointer; user-select:none;
-    text-align:left; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint); font-weight:600;
-    padding:12px 14px; border-bottom:1px solid var(--line-strong); white-space:nowrap; }
+    text-align:left; font-size:.7rem; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-faint); font-weight:600;
+    padding:12px 9px; border-bottom:1px solid var(--line-strong); white-space:nowrap; }
+  thead th:first-child, tbody td:first-child { padding-left:14px; }
   thead th:hover { color:var(--ink); }
   thead th.sorted { color:var(--gold); }
   th.num, td.num { text-align:right; font-variant-numeric:tabular-nums; }
-  tbody td { padding:11px 14px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  tbody td { padding:11px 9px; border-bottom:1px solid var(--line); white-space:nowrap; font-size:.88rem; }
   tbody tr:last-child td { border-bottom:none; }
   tbody tr:hover td { background:color-mix(in oklab,var(--gold) 5%,transparent); }
   .iname { font-weight:600; color:var(--ink); }
@@ -173,8 +177,10 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="search" placeholder="Search item…" autocomplete="off" spellcheck="false">
     </div>
+    <label class="checkfilter"><input type="checkbox" id="hideMats"> Hide Juices/Oils/Dusts/Shards</label>
   </div>
   <p class="board-note" id="boardNote"></p>
+  <p class="scroll-hint" id="scrollHint" hidden>↔ Scroll the table sideways for more columns (Cost/HC, etc.)</p>
 
   <div class="tablewrap">
     <div class="scroll">
@@ -183,13 +189,13 @@
           <tr>
             <th data-sort="name">Item</th>
             <th class="num" data-sort="floorUsd" title="giga.market floor price (lowest live ask).">Floor $</th>
-            <th class="num" data-sort="totalSupply" title="Circulating supply (minted − burned), from Gigaverse's item indexer.">Supply</th>
+            <th class="num" data-sort="totalSupply" title="Circulating supply, from giga.market.">Supply</th>
             <th class="num" data-sort="totalBurned">Burned</th>
-            <th class="num" data-sort="contributors">Contributors</th>
-            <th class="num" data-sort="impliedCoresPerUnit" title="Pool ÷ units burned so far.">HC/unit (now)</th>
-            <th class="num" data-sort="minHcPerUnit" title="Pool ÷ total circulating supply — the floor rate if everyone burned everything.">HC/unit (min)</th>
-            <th class="num" data-sort="costPerHcNow" title="Floor $ ÷ HC/unit (now).">Cost/HC (now)</th>
-            <th class="num" data-sort="costPerHcMin" title="Floor $ ÷ HC/unit (min) — worst-case cost per HC.">Cost/HC (min)</th>
+            <th class="num" data-sort="contributors" title="Number of unique players who've burned this item.">Burners</th>
+            <th class="num" data-sort="impliedCoresPerUnit" title="Pool ÷ units burned so far.">HC/Unit Now</th>
+            <th class="num" data-sort="minHcPerUnit" title="Pool ÷ total circulating supply — the floor rate if everyone burned everything.">HC/Unit Min</th>
+            <th class="num" data-sort="costPerHcNow" title="Floor $ ÷ HC/Unit Now.">Cost/HC Now</th>
+            <th class="num" data-sort="costPerHcMin" title="Floor $ ÷ HC/Unit Min — worst-case cost per HC.">Cost/HC Min</th>
           </tr>
         </thead>
         <tbody id="tbody"><tr><td class="empty" colspan="9">Loading Burn Pit data…</td></tr></tbody>
@@ -232,9 +238,15 @@
     tick(); setInterval(tick, 30000);
   }
 
+  var MATERIAL_RE = /Juice|Oil|Dust|Shard/i;
+
   function render() {
     var q = el("search").value.trim().toLowerCase();
-    var rows = DATA.items.filter(function (it) { return !q || it.name.toLowerCase().indexOf(q) !== -1; });
+    var hideMats = el("hideMats").checked;
+    var rows = DATA.items.filter(function (it) {
+      if (hideMats && MATERIAL_RE.test(it.name)) return false;
+      return !q || it.name.toLowerCase().indexOf(q) !== -1;
+    });
     rows.sort(function (a, b) {
       var av = a[sortKey], bv = b[sortKey];
       if (av == null && bv == null) return 0;
@@ -263,6 +275,8 @@
     }
     tb.innerHTML = html;
     el("boardNote").textContent = "Showing " + commaInt(rows.length) + " of " + commaInt(DATA.items.length) + " items.";
+    var scrollEl = document.querySelector(".scroll");
+    el("scrollHint").hidden = scrollEl.scrollWidth <= scrollEl.clientWidth + 1;
   }
 
   function applyData(burnpit, market) {
@@ -315,6 +329,7 @@
   }
 
   el("search").addEventListener("input", render);
+  el("hideMats").addEventListener("change", render);
   document.querySelectorAll("thead th[data-sort]").forEach(function (th) {
     th.addEventListener("click", function () {
       var key = th.dataset.sort;
