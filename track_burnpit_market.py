@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """
-Live market context for the Burn Pit tracker: circulating supply (from
-Gigaverse's own item indexer, CORS-open) and giga.market floor price (CORS-
-blocked from the browser, so fetched here) for each of the 154 Burn Pit
-items. burn_pit.html reads this alongside the manually-captured
-data/burn_pit.json to compute the worst-case ("if everyone burns everything")
-HC/unit rate and cost-per-HC at both the current and worst-case rate.
+Live market context for the Burn Pit tracker: circulating supply and floor
+price from giga.market (CORS-blocked from the browser, so fetched here) for
+each of the 154 Burn Pit items. burn_pit.html reads this alongside the
+manually-captured data/burn_pit.json to compute the worst-case ("if everyone
+burns everything") HC/unit rate and cost-per-HC at both the current and
+worst-case rate.
 
-  GET https://gigaverse.io/api/indexer/gameitems
-    -> per item MINT_COUNT_CID / BURN_COUNT_CID; circulating supply = mint - burn.
+  GET https://giga.market/api/supply-data -> per item {totalSupply, totalHolders}.
+    NOTE: gigaverse.io's own /api/indexer/gameitems (MINT_COUNT_CID/BURN_COUNT_CID)
+    looked like an obvious CORS-open alternative, but it's stale for many items
+    (some entries hadn't updated in a year, giving wildly wrong supply e.g. 0 for
+    an item that actually has ~1.7k in circulation) — giga.market's own live
+    figure is what the site displays and is the one to trust.
   GET https://giga.market/api/orderbook/{docId} -> asks (ascending); floor = min ask.
   GET https://giga.market/api/eth-price -> ETH/USD.
 
@@ -21,7 +25,7 @@ import requests
 
 from track_supply import APP_VERSION, DATA_DIR
 
-GAMEITEMS_URL = "https://gigaverse.io/api/indexer/gameitems"
+SUPPLY_URL = "https://giga.market/api/supply-data"
 ORDERBOOK_URL = "https://giga.market/api/orderbook/{}"
 ETH_PRICE_URL = "https://giga.market/api/eth-price"
 HEADERS = {
@@ -37,14 +41,13 @@ OUT = DATA_DIR / "burn_pit_market.json"
 
 
 def fetch_supply_by_id():
-    r = requests.get(GAMEITEMS_URL, timeout=TIMEOUT_S)
+    r = requests.get(SUPPLY_URL, headers=HEADERS, timeout=TIMEOUT_S)
     r.raise_for_status()
     out = {}
-    for e in r.json().get("entities", []):
-        doc_id = e.get("docId")
-        mint, burn = e.get("MINT_COUNT_CID"), e.get("BURN_COUNT_CID")
-        if doc_id is not None and mint is not None:
-            out[str(doc_id)] = max(0, mint - (burn or 0))
+    for doc_id, entry in r.json().items():
+        supply = entry.get("totalSupply")
+        if supply is not None:
+            out[str(doc_id)] = supply
     return out
 
 
@@ -69,7 +72,7 @@ def main():
     eth_usd = fetch_eth_usd()
     print(f"ETH/USD: {eth_usd}")
     supply_by_id = fetch_supply_by_id()
-    print(f"fetched supply for {len(supply_by_id)} items from gameitems indexer")
+    print(f"fetched supply for {len(supply_by_id)} items from giga.market")
 
     items = {}
     for doc_id in item_ids:
