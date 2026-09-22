@@ -6,7 +6,7 @@
 <title>Burn Pit Tracker</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
-<meta name="description" content="Gigaverse Awakening Burn Pit tracker — which of the 154 eligible items are being burned for Hard Cores, current implied payout rate per item, and which are Ethernal (persisting) items.">
+<meta name="description" content="Gigaverse Awakening Burn Pit tracker — supply, floor price, and current vs. worst-case Hard Core payout rate for all 154 items eligible to burn.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap">
@@ -101,12 +101,6 @@
   .search input:focus { outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in oklab,var(--focus) 26%,transparent); }
   .search svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ink-faint); }
 
-  .filterrow { display:inline-flex; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:3px; gap:2px; box-shadow:var(--shadow); }
-  .fbtn { font-family:"IBM Plex Mono",monospace; font-size:.76rem; font-weight:600; color:var(--ink-soft);
-    background:transparent; border:none; border-radius:999px; padding:6px 14px; cursor:pointer; transition:background .15s,color .15s; white-space:nowrap; }
-  .fbtn:hover { color:var(--ink); }
-  .fbtn.active { background:var(--gold-bg); color:var(--gold); }
-
   .board-note { font-size:.8rem; color:var(--ink-faint); margin:0 0 8px; }
   .linkish { color:var(--gold); cursor:pointer; text-decoration:none; font-weight:600; }
   .linkish:hover { text-decoration:underline; }
@@ -128,11 +122,9 @@
   .rate { font-family:"IBM Plex Mono",monospace; color:var(--ink-soft); }
   .empty { padding:26px 14px; text-align:center; color:var(--ink-faint); }
 
-  .ledger-badge { font-family:"IBM Plex Mono",monospace; font-size:.66rem; text-transform:uppercase; letter-spacing:.04em; font-weight:600;
-    padding:2px 8px; border-radius:999px; display:inline-block; }
-  .ledger-badge.eternal { color:var(--gold); background:var(--gold-bg); border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); cursor:help; }
-  .ledger-badge.seasonal { color:var(--ink-soft); background:var(--surface-2); border:1px solid var(--line); }
-  .ledger-badge.unlisted { color:var(--ink-faint); background:var(--surface-2); border:1px solid var(--line); }
+  .cost { font-family:"IBM Plex Mono",monospace; color:var(--ink); }
+  .cost.min { color:var(--ink-soft); }
+  .muted { color:var(--ink-faint); }
 
   footer { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.82rem; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
   footer a { color:var(--gold); text-decoration:none; }
@@ -162,7 +154,7 @@
   <header class="masthead">
     <p class="eyebrow">Gigaverse · The Awakening</p>
     <h1>Burn Pit Tracker</h1>
-    <p class="lede">Burning an item pays out from a fixed <b>300,000 Hard Core pool per item</b>, split pro-rata among everyone who's burned that item — the more burned, the lower the payout per unit. This tracks all 154 eligible items and their current implied rate.</p>
+    <p class="lede">Burning an item pays out from a fixed <b>300,000 Hard Core pool per item</b>, split pro-rata among everyone who's burned that item — the more burned, the lower the payout per unit. <b>HC/unit (min)</b> is the floor rate if the entire circulating supply got burned; <b>Cost/HC</b> is the giga.market floor price divided by that rate, i.e. what you'd pay per HC if you bought the item to burn it.</p>
     <div class="snapbar" id="snapbar" hidden>
       <span class="tag">snapshot</span>
       <span id="snapText"></span>
@@ -181,12 +173,6 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="search" placeholder="Search item…" autocomplete="off" spellcheck="false">
     </div>
-    <div class="filterrow" role="tablist" aria-label="Ledger filter">
-      <button type="button" class="fbtn active" data-filter="all">All</button>
-      <button type="button" class="fbtn" data-filter="eternal" title="Normally persists forever across seasons — burning it in the Pit is the one exception.">Ethernal</button>
-      <button type="button" class="fbtn" data-filter="seasonal" title="Would be reset/burned automatically at season end anyway.">Seasonal</button>
-      <button type="button" class="fbtn" data-filter="unlisted" title="Not found in the game's published Seasonal/Ethernal ledger — likely added after that doc was last updated.">Unlisted</button>
-    </div>
   </div>
   <p class="board-note" id="boardNote"></p>
 
@@ -196,19 +182,23 @@
         <thead>
           <tr>
             <th data-sort="name">Item</th>
-            <th data-sort="ledger">Ledger</th>
+            <th class="num" data-sort="floorUsd" title="giga.market floor price (lowest live ask).">Floor $</th>
+            <th class="num" data-sort="totalSupply" title="Circulating supply (minted − burned), from Gigaverse's item indexer.">Supply</th>
             <th class="num" data-sort="totalBurned">Burned</th>
             <th class="num" data-sort="contributors">Contributors</th>
-            <th class="num" data-sort="impliedCoresPerUnit">HC / unit (now)</th>
+            <th class="num" data-sort="impliedCoresPerUnit" title="Pool ÷ units burned so far.">HC/unit (now)</th>
+            <th class="num" data-sort="minHcPerUnit" title="Pool ÷ total circulating supply — the floor rate if everyone burned everything.">HC/unit (min)</th>
+            <th class="num" data-sort="costPerHcNow" title="Floor $ ÷ HC/unit (now).">Cost/HC (now)</th>
+            <th class="num" data-sort="costPerHcMin" title="Floor $ ÷ HC/unit (min) — worst-case cost per HC.">Cost/HC (min)</th>
           </tr>
         </thead>
-        <tbody id="tbody"><tr><td class="empty" colspan="5">Loading Burn Pit data…</td></tr></tbody>
+        <tbody id="tbody"><tr><td class="empty" colspan="9">Loading Burn Pit data…</td></tr></tbody>
       </table>
     </div>
   </div>
 
   <footer>
-    <span id="footNote">Snapshot captured from the in-game Burn Pit panel (authenticated — no public API exists for this data) · not auto-refreshed yet.</span>
+    <span id="footNote">Burn stats: manual snapshot from the in-game Burn Pit panel (authenticated, no public API). Supply/floor price: giga.market + Gigaverse item indexer, refreshed by the tracker's cron.</span>
     <span><a href="index.html">← Back to leaderboard</a></span>
   </footer>
 </div>
@@ -217,16 +207,17 @@
 (function () {
   "use strict";
   var RAW_BASE = "https://raw.githubusercontent.com/Cryptologist99/gigaverse-awakening-tracker/main/";
-  var DATA_URL = RAW_BASE + "data/burn_pit.json";
+  var BURNPIT_URL = RAW_BASE + "data/burn_pit.json";
+  var MARKET_URL = RAW_BASE + "data/burn_pit_market.json";
 
   var el = function (id) { return document.getElementById(id); };
   var DATA = null;
-  var filter = "all";
-  var sortKey = "totalBurned", sortDir = -1;
+  var sortKey = "costPerHcNow", sortDir = 1;
 
   function commaInt(n) { return Math.round(n).toLocaleString("en-US"); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" })[c]; }); }
-  function fmtRate(v) { return v >= 100 ? commaInt(v) : v.toFixed(2); }
+  function fmtRate(v) { return v == null ? "—" : (v >= 100 ? commaInt(v) : v.toFixed(2)); }
+  function fmtUsd(v) { return v == null ? "—" : (v < 0.01 ? "$" + v.toFixed(6) : v.toLocaleString("en-US", { style: "currency", currency: "USD" })); }
   function fmtDate(iso) { var d = new Date(iso); return isNaN(d) ? "—" : d.toLocaleString(undefined, { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" }); }
 
   function startCountdown(closeIso) {
@@ -241,80 +232,89 @@
     tick(); setInterval(tick, 30000);
   }
 
-  function ledgerBadge(ledger) {
-    if (ledger === "eternal") return '<span class="ledger-badge eternal" title="Normally persists forever across seasons — this is the one chance to burn it for HC.">Ethernal</span>';
-    if (ledger === "seasonal") return '<span class="ledger-badge seasonal">Seasonal</span>';
-    return '<span class="ledger-badge unlisted" title="Not found in the game\'s published Seasonal/Ethernal ledger doc.">Unlisted</span>';
-  }
-
   function render() {
     var q = el("search").value.trim().toLowerCase();
-    var rows = DATA.items.filter(function (it) {
-      if (filter !== "all" && it.ledger !== filter) return false;
-      if (q && it.name.toLowerCase().indexOf(q) === -1) return false;
-      return true;
-    });
+    var rows = DATA.items.filter(function (it) { return !q || it.name.toLowerCase().indexOf(q) !== -1; });
     rows.sort(function (a, b) {
       var av = a[sortKey], bv = b[sortKey];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1; // nulls (no market data) sort last regardless of direction
+      if (bv == null) return -1;
       if (typeof av === "string") return sortDir * av.localeCompare(bv);
       return sortDir * (av - bv);
     });
 
     var tb = el("tbody");
-    if (!rows.length) { tb.innerHTML = '<tr><td class="empty" colspan="5">No items match.</td></tr>'; el("boardNote").textContent = ""; return; }
+    if (!rows.length) { tb.innerHTML = '<tr><td class="empty" colspan="9">No items match.</td></tr>'; el("boardNote").textContent = ""; return; }
     var html = "";
     for (var i = 0; i < rows.length; i++) {
       var it = rows[i];
       html += '<tr>'
         + '<td class="iname">' + esc(it.name) + '</td>'
-        + '<td>' + ledgerBadge(it.ledger) + '</td>'
+        + '<td class="num' + (it.floorUsd == null ? ' muted' : '') + '">' + fmtUsd(it.floorUsd) + '</td>'
+        + '<td class="num num-mono' + (it.totalSupply == null ? ' muted' : '') + '">' + (it.totalSupply == null ? '—' : commaInt(it.totalSupply)) + '</td>'
         + '<td class="num num-mono">' + commaInt(it.totalBurned) + '</td>'
         + '<td class="num num-mono">' + commaInt(it.contributors) + '</td>'
         + '<td class="num rate">' + fmtRate(it.impliedCoresPerUnit) + '</td>'
+        + '<td class="num rate">' + fmtRate(it.minHcPerUnit) + '</td>'
+        + '<td class="num cost">' + fmtUsd(it.costPerHcNow) + '</td>'
+        + '<td class="num cost min">' + fmtUsd(it.costPerHcMin) + '</td>'
         + '</tr>';
     }
     tb.innerHTML = html;
     el("boardNote").textContent = "Showing " + commaInt(rows.length) + " of " + commaInt(DATA.items.length) + " items.";
   }
 
-  function applyData(data) {
-    DATA = data;
-    el("tlBudget").textContent = commaInt(data.budgetCores) + " HC";
+  function applyData(burnpit, market) {
+    var marketItems = (market && market.items) || {};
+    var items = burnpit.items.map(function (it) {
+      var m = marketItems[String(it.itemId)] || {};
+      var minHcPerUnit = (m.totalSupply && m.totalSupply > 0) ? it.poolCores / m.totalSupply : null;
+      var costPerHcNow = (m.floorUsd != null && it.impliedCoresPerUnit > 0) ? m.floorUsd / it.impliedCoresPerUnit : null;
+      var costPerHcMin = (m.floorUsd != null && minHcPerUnit > 0) ? m.floorUsd / minHcPerUnit : null;
+      return Object.assign({}, it, {
+        totalSupply: m.totalSupply != null ? m.totalSupply : null,
+        floorEth: m.floorEth != null ? m.floorEth : null,
+        floorUsd: m.floorUsd != null ? m.floorUsd : null,
+        minHcPerUnit: minHcPerUnit,
+        costPerHcNow: costPerHcNow,
+        costPerHcMin: costPerHcMin
+      });
+    });
+    DATA = { budgetCores: burnpit.budgetCores, itemCount: burnpit.itemCount, closeAt: burnpit.closeAt,
+      capturedAt: burnpit.capturedAt, frozenAt: burnpit.frozenAt, items: items };
+
+    el("tlBudget").textContent = commaInt(DATA.budgetCores) + " HC";
     var totalBurned = 0, totalContrib = 0;
-    data.items.forEach(function (it) { totalBurned += it.totalBurned; totalContrib += it.contributors; });
+    items.forEach(function (it) { totalBurned += it.totalBurned; totalContrib += it.contributors; });
     el("tlBurned").textContent = commaInt(totalBurned);
-    el("tlBurnedD").textContent = data.itemCount + " items tracked";
+    el("tlBurnedD").textContent = DATA.itemCount + " items tracked";
     el("tlContrib").textContent = commaInt(totalContrib);
 
     el("srcDot").className = "dot";
-    el("srcText").innerHTML = "Snapshot <b>" + fmtDate(data.capturedAt) + "</b>";
+    var marketNote = market ? (" · market data as of " + fmtDate(market.generatedAt) + ".") : " · market data unavailable.";
+    el("srcText").innerHTML = "Snapshot <b>" + fmtDate(DATA.capturedAt) + "</b>";
     el("snapbar").hidden = false;
-    el("snapText").innerHTML = "Captured " + fmtDate(data.capturedAt) + " from the authenticated in-game Burn Pit panel — no public API exists for this data, so it updates only when manually refreshed. Frozen item list as of " + fmtDate(data.frozenAt) + ".";
-    el("tlClosesD").textContent = fmtDate(data.closeAt) + " (before the main event ends)";
-    startCountdown(data.closeAt);
+    el("snapText").innerHTML = "Burn stats captured " + fmtDate(DATA.capturedAt) + " from the authenticated in-game Burn Pit panel — no public API exists for this, so it updates only when manually refreshed" + esc(marketNote) + " Frozen item list as of " + fmtDate(DATA.frozenAt) + ".";
+    el("tlClosesD").textContent = fmtDate(DATA.closeAt) + " (before the main event ends)";
+    startCountdown(DATA.closeAt);
     render();
   }
 
   function load() {
     el("srcText").innerHTML = "<b>Loading…</b>";
-    fetch(DATA_URL, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(applyData)
+    Promise.all([
+      fetch(BURNPIT_URL, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }),
+      fetch(MARKET_URL, { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    ]).then(function (res) { applyData(res[0], res[1]); })
       .catch(function (e) {
         el("srcDot").className = "dot err";
         el("srcText").innerHTML = "<b>Couldn't load Burn Pit data</b>";
-        el("tbody").innerHTML = '<tr><td class="empty" colspan="5">Couldn\'t load data — ' + esc(e.message) + '.</td></tr>';
+        el("tbody").innerHTML = '<tr><td class="empty" colspan="9">Couldn\'t load data — ' + esc(e.message) + '.</td></tr>';
       });
   }
 
   el("search").addEventListener("input", render);
-  document.querySelectorAll(".fbtn").forEach(function (b) {
-    b.addEventListener("click", function () {
-      document.querySelectorAll(".fbtn").forEach(function (x) { x.classList.remove("active"); });
-      b.classList.add("active");
-      filter = b.dataset.filter;
-      render();
-    });
-  });
   document.querySelectorAll("thead th[data-sort]").forEach(function (th) {
     th.addEventListener("click", function () {
       var key = th.dataset.sort;
