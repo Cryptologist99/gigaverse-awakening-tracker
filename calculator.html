@@ -110,6 +110,7 @@
     border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:3px 8px; border-radius:999px; cursor:pointer; font-weight:500; transition:transform .12s,background .15s; }
   .chip:hover { transform:translateY(-1px); } .chip:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
   .chip:disabled { opacity:.55; cursor:default; transform:none; }
+  .chip.active { background:var(--gold); color:#1B1A28; border-color:var(--gold); }
 
   .results { display:flex; flex-direction:column; gap:18px; }
   .hero { background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 8%,var(--surface)) 0%,var(--surface) 60%);
@@ -210,13 +211,13 @@
       </div>
       <div class="field">
         <label for="totalHC">Projected total HC <span class="unit">HC in play</span></label>
-        <div class="input-shell"><input type="text" id="totalHC" inputmode="numeric" value="0" autocomplete="off" spellcheck="false"></div>
+        <div class="input-shell"><input type="text" id="totalHC" inputmode="numeric" value="446,800,000" autocomplete="off" spellcheck="false"></div>
         <div class="helper"><button type="button" class="chip" id="useTotal">Use current</button></div>
         <p class="chip-group-label">Projections <span class="chip-group-note" title="Each projection below includes +46,200,000 HC from the Burn Pit mechanic added 2026-09-21 (154 items × a 300,000 HC pool each).">(incl. +46.2M Burn Pit)</span></p>
         <div class="helper">
-          <button type="button" class="chip" id="hcFlat" title="Flat-rate estimate (as of Sep 22): holds the most recent 7-day average daily HC gain (~8.69M/day) constant through event end, with no further acceleration, plus +46,200,000 from the Burn Pit mechanic (154 items × 300,000 HC pool each, added 2026-09-21). Likely a floor.">Flat · 435.2M</button>
-          <button type="button" class="chip" id="hcBest" title="Best estimate (as of Sep 22): extrapolates the most recent 7-day trend in how fast daily HC gain itself is growing (+36.3k/day — down sharply from +102k/day a week earlier), accounting for continued but decelerating acceleration, plus +46,200,000 from the Burn Pit mechanic (154 items × 300,000 HC pool each, added 2026-09-21). The most defensible single number.">Trend · 442.6M</button>
-          <button type="button" class="chip" id="hcAggressive" title="Aggressive estimate (as of Sep 22): a quadratic fit to the entire history assuming acceleration stays constant at the full-dataset average (+162k/day²), ignoring the clear recent slowdown in growth-of-growth, plus +46,200,000 from the Burn Pit mechanic (154 items × 300,000 HC pool each, added 2026-09-21). Likely too high.">Quadratic · 469.5M</button>
+          <button type="button" class="chip" id="hcFlat" title="Conservative floor (as of Sep 29): holds the single worst day's HC gain from the last 14 days (~8.46M/day) constant through event end — deliberately more cautious than just using the recent average, plus +46,200,000 from the Burn Pit mechanic (154 items × 300,000 HC pool each, added 2026-09-21).">Flat · 435.3M</button>
+          <button type="button" class="chip active" id="hcBest" title="Best estimate (as of Sep 29, selected by default): extrapolates the most recent 7-day trend in how fast daily HC gain itself is growing (+71.9k/day² — back up from +36.3k/day² the week before), plus +46,200,000 from the Burn Pit mechanic (154 items × 300,000 HC pool each, added 2026-09-21). The most defensible single number.">Trend · 446.8M</button>
+          <button type="button" class="chip" id="hcAggressive" title="Conservative ceiling (as of Sep 29): applies the steepest 7-day acceleration seen at any point this event (+271.7k/day², mid-September) going forward from today's rate — deliberately generous, plus +46,200,000 from the Burn Pit mechanic (154 items × 300,000 HC pool each, added 2026-09-21).">Ceiling · 456.8M</button>
         </div>
       </div>
     </section>
@@ -308,7 +309,9 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   // STATE.dist = per-player HC (the distribution); pot/total feed the input defaults.
   var EMBED = window.__HC_EMBED || { pot: 0, ts: "", dist: [] };
   var STATE = { dist: EMBED.dist.slice(), pot: EMBED.pot, total: sum(EMBED.dist), source: "embedded", ts: EMBED.ts, secondsTillEnd: null };
-  var touched = { jackpot: false, totalHC: false, boxCost: false, yourHC: false };
+  // totalHC starts "touched" so the Trend chip's default value (set in markup) isn't
+  // immediately overwritten by the live current-total poll — see applyStateToUI().
+  var touched = { jackpot: false, totalHC: true, boxCost: false, yourHC: false };
   var endAt = null, countdownTimer = null;
   var lastVPHC = 0; // value per HC from the main calculator, shared with the daily calc
 
@@ -549,16 +552,22 @@ window.__HC_EMBED = { pot: 37383.97, ts: "2026-08-28T23:11:19Z", dist: /*HCDATA*
   f.totalHC.addEventListener("blur", function () { if (f.totalHC.value.trim()) f.totalHC.value = commaInt(parseNum(f.totalHC.value)); });
   f.jackpot.addEventListener("blur", function () { if (f.jackpot.value.trim()) f.jackpot.value = fmtUsd(parseNum(f.jackpot.value)); });
 
+  var hcScenarioChips = [el("hcFlat"), el("hcBest"), el("hcAggressive")];
+  function setActiveScenario(btn) { hcScenarioChips.forEach(function (b) { b.classList.toggle("active", b === btn); }); }
+
   el("useJackpot").addEventListener("click", function () { f.jackpot.value = fmtUsd(STATE.pot); touched.jackpot = false; calc(); });
-  el("useTotal").addEventListener("click", function () { f.totalHC.value = fmtInt(STATE.total); touched.totalHC = false; calc(); });
+  el("useTotal").addEventListener("click", function () { f.totalHC.value = fmtInt(STATE.total); touched.totalHC = false; setActiveScenario(null); calc(); });
   el("projJackpot").addEventListener("click", function () { var pr = computeProjection(); if (!pr.valid) return; f.jackpot.value = fmtUsd(pr.finalPot); touched.jackpot = true; calc(); });
   el("refreshBtn").addEventListener("click", function () { loadLive(); });
+  f.totalHC.addEventListener("input", function () { setActiveScenario(null); });
 
-  // Manual scenario estimates from ad hoc analysis of the full growth history (as of Sep 22, 2026) —
-  // not live-recomputed on page load like the chips above; see chat for methodology.
-  el("hcFlat").addEventListener("click", function () { f.totalHC.value = fmtInt(435200000); touched.totalHC = true; calc(); });
-  el("hcBest").addEventListener("click", function () { f.totalHC.value = fmtInt(442600000); touched.totalHC = true; calc(); });
-  el("hcAggressive").addEventListener("click", function () { f.totalHC.value = fmtInt(469500000); touched.totalHC = true; calc(); });
+  // Manual scenario estimates from ad hoc analysis of the full growth history (as of Sep 29, 2026) —
+  // not live-recomputed on page load like the chips above; see chat for methodology. Flat and Ceiling
+  // are deliberately widened past the tight regression numbers to stay conservative; Trend is the
+  // single best estimate and is pre-selected as the default totalHC value.
+  el("hcFlat").addEventListener("click", function () { f.totalHC.value = fmtInt(435300000); touched.totalHC = true; setActiveScenario(this); calc(); });
+  el("hcBest").addEventListener("click", function () { f.totalHC.value = fmtInt(446800000); touched.totalHC = true; setActiveScenario(this); calc(); });
+  el("hcAggressive").addEventListener("click", function () { f.totalHC.value = fmtInt(456800000); touched.totalHC = true; setActiveScenario(this); calc(); });
 
   // recent-momentum projection rates (server-computed); refresh chips once loaded
   fetch(RAW_BASE + "data/projection.json", { cache: "no-store" })
