@@ -279,7 +279,7 @@
   // Burn Pit closed on 2026-10-05 18:00 UTC. Snapshots taken before the credit don't contain it,
   // so burnIncl() adds it to their totals — keeping every displayed total (and the delta between
   // a pre- and post-credit snapshot) on the same "includes Burn Pit" footing. Per-player gains
-  // that would span the credit are blanked: individual payouts aren't separable from organic gain.
+  // that would span the credit still show the real amount gained; only averages leave it out.
   var BURN_PIT_HC = 46200000;
   var BURN_PIT_CREDIT_MS = Date.parse("2026-10-05T18:30:00Z");
   function preCredit(ts) { return !!ts && Date.parse(ts) < BURN_PIT_CREDIT_MS; }
@@ -607,8 +607,7 @@
     el("snapbar").hidden = false;
     el("snapMode").textContent = "live";
     el("snapText").innerHTML = "Pulled directly from gigaverse.io just now — " + commaInt(agg.holders) + " holders across " + agg.pages + " pages. Move and Hard Cores gained are vs the last daily snapshot"
-      + (baseline ? (" (<b>" + fmtET(baseline.ts) + "</b>)") : "") + "; 3-day avg is carried over unchanged from that snapshot."
-      + (agg.baseSpansCredit ? " Hard Cores gained is blank until the next daily snapshot, because the one-time Burn Pit payout landed after that snapshot and would swamp it." : "");
+      + (baseline ? (" (<b>" + fmtET(baseline.ts) + "</b>)") : "") + "; 3-day avg is carried over unchanged from that snapshot.";
 
     el("srcDot").className = "dot live";
     el("srcText").innerHTML = "<b>Live</b> · just now";
@@ -646,20 +645,19 @@
             if (dp.name) dailyByName[dp.name] = dp;
           }
         }
-        var baseSpansCredit = !!(DAILY_DATA && DAILY_DATA.current && preCredit(DAILY_DATA.current.ts));
         var players = entries.map(function (e, i) {
           var rank = i + 1, hc = +e.amount, name = e.username || "";
           var d = name ? dailyByName[name] : null;
           return {
             rank: rank, name: name, hc: hc,
-            hcDelta: (d && !baseSpansCredit) ? hc - d.hc : null,
+            hcDelta: d ? hc - d.hc : null,
             rankDelta: d ? d.rank - rank : null,
             avgPerDay: d ? d.avgPerDay : null,
             isNew: null
           };
         });
         var totalHC = players.reduce(function (s, p) { return s + p.hc; }, 0);
-        applyLive({ pot: potJson.prizePot.poolBalance / 100, totalHC: totalHC, holders: players.length, ts: new Date().toISOString(), players: players, pages: totalPages, baseSpansCredit: baseSpansCredit });
+        applyLive({ pot: potJson.prizePot.poolBalance / 100, totalHC: totalHC, holders: players.length, ts: new Date().toISOString(), players: players, pages: totalPages });
       });
     }).catch(function (e) {
       el("srcDot").className = "dot err";

@@ -92,9 +92,9 @@ def main():
     prev_map = wmap(prev) if prev else {}
 
     # The one-time Burn Pit payout (see burnpit_credit.py) sits inside any gain measured across
-    # it, and per-player payouts aren't separable from organic gain — so the day's per-player
-    # delta is blanked, and a trailing avg whose window spans it is rebuilt from the daily
-    # (PM->PM) intervals that don't. Whole-day intervals keep the avg free of time-of-day bias.
+    # it. The per-player delta still shows the real amount gained, but a trailing avg whose window
+    # spans it is rebuilt from the daily (PM->PM) intervals that don't. Whole-day intervals keep
+    # the avg free of time-of-day bias.
     delta_spans = bool(prev) and spans_credit(prev, cur)
     window_spans = win_ts != cur and spans_credit(win_ts, cur)
     pm_win = [t for t in pm if win_ts <= t <= cur]
@@ -117,7 +117,7 @@ def main():
         w = (r["wallet"] or "").lower()
         p = prev_map.get(w)
         amt, rank = int(r["hard_cores"]), int(r["rank"])
-        delta = (amt - p["amount"]) if (p and not delta_spans) else None   # since previous (daily) snapshot
+        delta = (amt - p["amount"]) if p else None            # since previous (daily) snapshot
         # trailing ~3-day avg/day: growth over the window, capped at the player's tenure
         # (players present < 3 days use growth since they were first seen)
         avg = None
