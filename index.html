@@ -162,7 +162,7 @@
   .pchart .bar { width:18px; min-height:2px; background:var(--up); border-radius:2px 2px 0 0; opacity:.85; cursor:default; }
   .pchart .bar:hover { opacity:1; }
   .pchart .bar.down { background:var(--down); }
-  .pchart .bar.burn { background:none; border-top:2px dashed var(--ink-faint); opacity:.7; }
+  .pchart-note { font-weight:400; color:var(--ink-faint); }
   .pchart .barlabel { font-size:.6rem; color:var(--ink-faint); margin-top:6px; white-space:nowrap; }
   .pchart-loading, .pchart-empty { font-size:.82rem; color:var(--ink-faint); margin:0; }
   .th-tip { border-bottom:1px dotted var(--ink-faint); cursor:help; }
@@ -449,15 +449,10 @@
       var d = new Date(s.date + "T00:00:00Z");
       var dayLabel = d.toLocaleDateString(undefined, { month: "numeric", day: "numeric", timeZone: "UTC" });
       var fullLabel = d.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
-      if (s.gained == null) {
-        // The one-time Burn Pit payout landed inside this day's interval and can't be separated
-        // from the player's organic gain, so the day is marked instead of charted.
-        return '<div class="barcol" title="' + esc(fullLabel) + ': not charted — includes the one-time Burn Pit HC payout">'
-          + '<span class="barval">—</span>'
-          + '<div class="bartrack"><div class="bar burn"></div></div>'
-          + '<span class="barlabel">' + esc(dayLabel) + '</span>'
-          + '</div>';
-      }
+      // The one-time Burn Pit payout landed inside this day's interval and can't be separated
+      // from organic gain, so the day is left out (like 8/29). It stays in pts so the next bar
+      // isn't flagged as spanning two days — its gain is a clean one-day diff.
+      if (s.gained == null) return "";
       var h = Math.max(2, Math.round(Math.abs(s.gained) / max * 100));
       // A skipped/missing date between two plotted days (e.g. the excluded 8/29) means this
       // bar's number actually spans more than one day — flag that in the tooltip so it isn't
@@ -476,7 +471,11 @@
         + '<span class="barlabel">' + esc(dayLabel) + '</span>'
         + '</div>';
     }).join("");
-    container.innerHTML = '<p class="pchart-title">Daily Hard Cores gained</p><div class="pchart">' + cols + '</div>';
+    var burnDays = pts.filter(function (s) { return s.gained == null; }).map(function (s) {
+      return new Date(s.date + "T00:00:00Z").toLocaleDateString(undefined, { month: "numeric", day: "numeric", timeZone: "UTC" });
+    });
+    var burnNote = burnDays.length ? ' <span class="pchart-note">· ' + esc(burnDays.join(", ")) + ' left out (one-time Burn Pit payout)</span>' : "";
+    container.innerHTML = '<p class="pchart-title">Daily Hard Cores gained' + burnNote + '</p><div class="pchart">' + cols + '</div>';
   }
   function renderExpandedCharts(tb) {
     var wraps = tb.querySelectorAll(".pchart-wrap");
