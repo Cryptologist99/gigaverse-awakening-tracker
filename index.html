@@ -154,6 +154,7 @@
   .momcell .mdown { color:var(--down); margin-left:7px; cursor:help; }
   tbody tr.playerrow { cursor:pointer; }
   tr.expand-row td { background:var(--surface-2); padding:16px 18px; }
+  .pchart-wrap { position:sticky; left:18px; }
   .pchart-title { font-size:.78rem; color:var(--ink-soft); margin:0 0 10px; font-weight:600; }
   .pchart { display:flex; align-items:flex-end; gap:4px; overflow-x:auto; padding-bottom:2px; }
   .pchart .barcol { display:flex; flex-direction:column; align-items:center; width:36px; flex:none; }
@@ -476,10 +477,23 @@
     });
     var burnNote = burnDays.length ? ' <span class="pchart-note">· ' + esc(burnDays.join(", ")) + ' left out (one-time Burn Pit payout)</span>' : "";
     container.innerHTML = '<p class="pchart-title">Daily Hard Cores gained' + burnNote + '</p><div class="pchart">' + cols + '</div>';
+    var scroller = container.querySelector(".pchart");
+    if (scroller) scroller.scrollLeft = scroller.scrollWidth; // open on the latest days; older ones scroll left
   }
+  // The table can be wider than the screen (it scrolls sideways), which used to push the chart's
+  // newest days out of view. Pin the chart to the visible width instead; it scrolls on its own.
+  function fitChartWrap(w) {
+    var sc = w.closest(".scroll");
+    if (sc) w.style.width = Math.max(200, sc.clientWidth - 36) + "px";
+  }
+  window.addEventListener("resize", function () {
+    var ws = document.querySelectorAll(".pchart-wrap");
+    for (var i = 0; i < ws.length; i++) fitChartWrap(ws[i]);
+  });
   function renderExpandedCharts(tb) {
     var wraps = tb.querySelectorAll(".pchart-wrap");
     for (var i = 0; i < wraps.length; i++) {
+      fitChartWrap(wraps[i]);
       (function (wrapEl) {
         var name = wrapEl.getAttribute("data-name");
         wrapEl.innerHTML = '<p class="pchart-loading">Loading history…</p>';
