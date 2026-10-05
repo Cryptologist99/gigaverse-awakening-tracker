@@ -16,6 +16,8 @@ that day) so date strings aren't repeated per player.
 import csv, json, datetime as dt
 from pathlib import Path
 
+from burnpit_credit import BURN_PIT_CREDIT_AT, spans_credit
+
 DATA = Path(__file__).parent / "data"
 LB = DATA / "leaderboard_history.csv"
 OUT = DATA / "player_daily_history.json"
@@ -29,6 +31,7 @@ def main():
     # username -> {date: hc}; CSV rows are chronological (append-only), so the last
     # write for a given date is that date's last snapshot.
     by_name = {}
+    last_ts = {}  # date -> that date's last snapshot timestamp (shared across players)
     with LB.open(encoding="utf-8") as f:
         for r in csv.DictReader(f):
             name = r["username"]
@@ -42,11 +45,13 @@ def main():
             except ValueError:
                 continue
             by_name.setdefault(name, {})[date] = hc
+            last_ts[date] = r["timestamp_utc"]
 
     all_dates = sorted({d for dates in by_name.values() for d in dates})
     date_index = {d: i for i, d in enumerate(all_dates)}
 
     players = {}
+    credit_dates = set()  # dates whose gain would span the one-time Burn Pit payout
     starts = {}  # name -> first-appearance date, so the client can flag a gap on a
                  # player's very first plotted bar too (e.g. joined 8/28, first real bar
                  # is 8/30 because 8/29 is excluded — that's a 2-day span, not one day).
@@ -57,7 +62,13 @@ def main():
         for i, d in enumerate(sorted_dates):
             if i == 0:
                 continue  # first day this player appears has no prior value to diff against
-            gain = by_date[d] - by_date[sorted_dates[i - 1]]
+            prev_d = sorted_dates[i - 1]
+            if spans_credit(last_ts[prev_d], last_ts[d]):
+                # Mostly the one-time Burn Pit payout, not organic gain — leave it out
+                # (null) and let the client mark the day instead of charting a huge bar.
+                credit_dates.add(d)
+                continue
+            gain = by_date[d] - by_date[prev_d]
             series[date_index[d]] = gain
         players[name] = series
 
@@ -65,6 +76,7 @@ def main():
         "generatedAt": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "dates": all_dates,
         "starts": starts,
+        "burnPit": {"creditAt": BURN_PIT_CREDIT_AT, "creditDates": sorted(credit_dates)},
         "players": players,
     }
     with OUT.open("w", encoding="utf-8") as f:

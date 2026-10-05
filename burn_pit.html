@@ -169,6 +169,10 @@
       <span class="tag">snapshot</span>
       <span id="snapText"></span>
     </div>
+    <div class="snapbar" id="closedbar" hidden>
+      <span class="tag">closed</span>
+      <span>The Burn Pit closed on Oct 5 at 18:00 UTC and its payouts have been credited to accounts — they're now included in the leaderboard's Hard Core totals. The burn counts and rates below come from the last manual snapshot and aren't final.</span>
+    </div>
   </header>
 
   <div class="topline">
@@ -319,6 +323,7 @@
     el("snapText").innerHTML = "Burn stats captured " + fmtDate(DATA.capturedAt) + " from the authenticated in-game Burn Pit panel — no public API exists for this, so it updates only when manually refreshed" + esc(marketNote) + " Frozen item list as of " + fmtDate(DATA.frozenAt) + ".";
     el("tlClosesD").textContent = fmtDate(DATA.closeAt) + " (before the main event ends)";
     startCountdown(DATA.closeAt);
+    el("closedbar").hidden = new Date(DATA.closeAt).getTime() > Date.now();
     render();
   }
 

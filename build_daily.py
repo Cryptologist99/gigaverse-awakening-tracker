@@ -14,6 +14,8 @@ between snapshots. The full CSVs are left untouched for later analysis.
 import csv, json, datetime as dt
 from pathlib import Path
 
+from burnpit_credit import BURN_PIT_CREDIT_AT, BURN_PIT_CREDIT_HC, spans_credit
+
 DATA = Path(__file__).parent / "data"
 LB   = DATA / "leaderboard_history.csv"
 POT  = DATA / "pot_history.csv"
@@ -88,16 +90,40 @@ def main():
     win_map = {(r["wallet"] or "").lower(): int(r["hard_cores"]) for r in rows_by_ts.get(win_ts, []) if r["wallet"]}
 
     prev_map = wmap(prev) if prev else {}
+
+    # The one-time Burn Pit payout (see burnpit_credit.py) sits inside any gain measured across
+    # it, and per-player payouts aren't separable from organic gain — so the day's per-player
+    # delta is blanked, and a trailing avg whose window spans it is rebuilt from the daily
+    # (PM->PM) intervals that don't. Whole-day intervals keep the avg free of time-of-day bias.
+    delta_spans = bool(prev) and spans_credit(prev, cur)
+    window_spans = win_ts != cur and spans_credit(win_ts, cur)
+    pm_win = [t for t in pm if win_ts <= t <= cur]
+    pm_maps = {t: {w: v["amount"] for w, v in wmap(t).items()} for t in pm_win} if window_spans else {}
+
+    def avg_excluding_credit(w):
+        gain = days = 0.0
+        for a, b in zip(pm_win, pm_win[1:]):
+            if spans_credit(a, b):
+                continue
+            wa, wb = pm_maps[a].get(w), pm_maps[b].get(w)
+            if wa is None or wb is None:
+                continue
+            gain += wb - wa
+            days += (epoch(b) - epoch(a)) / 86400.0
+        return round(gain / days) if days >= 0.5 else None
+
     players = []
     for r in sorted(rows_by_ts[cur], key=lambda r: int(r["rank"])):
         w = (r["wallet"] or "").lower()
         p = prev_map.get(w)
         amt, rank = int(r["hard_cores"]), int(r["rank"])
-        delta = (amt - p["amount"]) if p else None            # since previous (daily) snapshot
+        delta = (amt - p["amount"]) if (p and not delta_spans) else None   # since previous (daily) snapshot
         # trailing ~3-day avg/day: growth over the window, capped at the player's tenure
         # (players present < 3 days use growth since they were first seen)
         avg = None
-        if w in win_map and win_ts != cur:
+        if window_spans:
+            avg = avg_excluding_credit(w)
+        elif w in win_map and win_ts != cur:
             days = (cur_epoch - win_epoch) / 86400.0
             if days >= 0.5:
                 avg = round((amt - win_map[w]) / days)
@@ -122,6 +148,8 @@ def main():
         "generatedAt": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "current": meta(cur),
         "previous": meta(prev) if prev else None,
+        "burnPit": {"creditAt": BURN_PIT_CREDIT_AT, "creditHC": BURN_PIT_CREDIT_HC,
+                    "spansDelta": delta_spans, "spansAvgWindow": window_spans},
         "players": players,
     }
     with OUT.open("w", encoding="utf-8") as f:
@@ -141,7 +169,17 @@ def main():
     days = (cur_epoch - win_epoch) / 86400.0   # same ~3-day window as the per-player avg
     if days >= 0.5:
         proj["windowDays"] = round(days, 2)
-        proj["hcPerDay"] = round((total_hc(cur) - total_hc(win_ts)) / days)
+        if window_spans:
+            g = d = 0.0
+            for a, b in zip(pm_win, pm_win[1:]):
+                if spans_credit(a, b):
+                    continue
+                g += total_hc(b) - total_hc(a)
+                d += (epoch(b) - epoch(a)) / 86400.0
+            proj["hcPerDay"] = round(g / d) if d >= 0.5 else None
+            proj["burnPitCreditExcluded"] = True
+        else:
+            proj["hcPerDay"] = round((total_hc(cur) - total_hc(win_ts)) / days)
         pc, pp = pot.get(cur), pot.get(win_ts)
         if pc is not None and pp is not None:
             proj["potPerDay"] = round((pc - pp) / days, 4)

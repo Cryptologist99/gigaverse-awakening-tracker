@@ -162,6 +162,7 @@
   .pchart .bar { width:18px; min-height:2px; background:var(--up); border-radius:2px 2px 0 0; opacity:.85; cursor:default; }
   .pchart .bar:hover { opacity:1; }
   .pchart .bar.down { background:var(--down); }
+  .pchart .bar.burn { background:none; border-top:2px dashed var(--ink-faint); opacity:.7; }
   .pchart .barlabel { font-size:.6rem; color:var(--ink-faint); margin-top:6px; white-space:nowrap; }
   .pchart-loading, .pchart-empty { font-size:.82rem; color:var(--ink-faint); margin:0; }
   .th-tip { border-bottom:1px dotted var(--ink-faint); cursor:help; }
@@ -208,11 +209,11 @@
 
   <div class="topline">
     <div class="tl"><p class="k">Prize pot</p><p class="v gold" id="tlPot">—</p><p class="d" id="tlPotD"></p></div>
-    <div class="tl"><p class="k">Total Hard Cores <span class="burnpit-badge" title="Includes +46,200,000 HC from the Burn Pit mechanic (154 items × a 300,000 HC pool each) added 2026-09-21. Not yet individually earned by players — it's a guaranteed additional pool on top of tracked leaderboard HC.">+ Burn Pit</span></p><p class="v" id="tlHC">—</p><p class="d" id="tlHCD"></p></div>
+    <div class="tl"><p class="k">Total Hard Cores <span class="burnpit-badge" title="Includes the 46,200,000 HC Burn Pit payout (154 items × a 300,000 HC pool each), credited to accounts after the Burn Pit closed on Oct 5 at 18:00 UTC. Snapshots taken before the credit have it added on top so totals line up; daily gains and averages exclude it.">incl. Burn Pit</span></p><p class="v" id="tlHC">—</p><p class="d" id="tlHCD"></p></div>
     <div class="tl"><p class="k">Holders</p><p class="v" id="tlHolders">—</p><p class="d" id="tlHoldersD"></p></div>
     <div class="tl"><p class="k">Event ends in</p><p class="v" id="tlEnds">—</p><p class="d">Oct 9, 18:00 UTC</p></div>
   </div>
-  <p class="burnpit-note">Total Hard Cores includes +46,200,000 from the Burn Pit mechanic (154 items × 300,000 HC pool each), added 2026-09-21.</p>
+  <p class="burnpit-note">Total Hard Cores includes the 46,200,000 HC Burn Pit payout, credited to accounts after it closed on Oct 5. Daily gains and 3-day averages exclude it.</p>
 
   <div class="controls">
     <div class="search">
@@ -273,10 +274,15 @@
   var API_LB  = "https://gigaverse.io/api/leaderboard/id/8";
   var EVENT_END = Date.UTC(2026, 9, 9, 18, 0, 0) / 1000; // Oct 9 2026 18:00 UTC
   var DEFAULT_SHOW = 250;
-  // Burn Pit mechanic (added 2026-09-21): burning items yields HC from a fixed per-item pool
-  // (154 items x 300,000 HC each) — a guaranteed additional pool on top of tracked leaderboard
-  // HC, not yet earned by individual players. Added to the displayed Total Hard Cores tile.
+  // Burn Pit payout: a fixed 46.2M HC (154 items x 300,000) credited to player accounts after the
+  // Burn Pit closed on 2026-10-05 18:00 UTC. Snapshots taken before the credit don't contain it,
+  // so burnIncl() adds it to their totals — keeping every displayed total (and the delta between
+  // a pre- and post-credit snapshot) on the same "includes Burn Pit" footing. Per-player gains
+  // that would span the credit are blanked: individual payouts aren't separable from organic gain.
   var BURN_PIT_HC = 46200000;
+  var BURN_PIT_CREDIT_MS = Date.parse("2026-10-05T18:30:00Z");
+  function preCredit(ts) { return !!ts && Date.parse(ts) < BURN_PIT_CREDIT_MS; }
+  function burnIncl(total, ts) { return (total || 0) + (preCredit(ts) ? BURN_PIT_HC : 0); }
 
   var el = function (id) { return document.getElementById(id); };
   var STATE = { players: [] };
@@ -395,16 +401,18 @@
       var rows = byName[name];
       if (!rows || !rows.length) return { points: [], start: null };
       rows.sort(function (a, b) { return a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0; });
-      var byDate = {}, order = [];
+      var byDate = {}, order = [], lastTs = {};
       for (var i = 0; i < rows.length; i++) {
         var date = rows[i].ts.slice(0, 10);
         if (!(date in byDate)) order.push(date);
         byDate[date] = rows[i].hc; // last snapshot of the day wins
+        lastTs[date] = rows[i].ts;
       }
       var points = [];
       for (var j = 0; j < order.length; j++) {
         var cur = byDate[order[j]], prev = j > 0 ? byDate[order[j - 1]] : null;
-        points.push({ date: order[j], gained: prev == null ? null : cur - prev });
+        var spans = j > 0 && Date.parse(lastTs[order[j - 1]]) < BURN_PIT_CREDIT_MS && BURN_PIT_CREDIT_MS <= Date.parse(lastTs[order[j]]);
+        points.push({ date: order[j], gained: (prev == null || spans) ? null : cur - prev, burn: spans });
       }
       return { points: points, start: order[0] || null };
     });
@@ -414,8 +422,13 @@
       var dates = digest.dates || [];
       var series = (digest.players && digest.players[name]) || [];
       var points = [];
-      for (var i = 0; i < series.length; i++) points.push({ date: dates[i], gained: series[i] });
-      return { points: points, start: (digest.starts && digest.starts[name]) || null };
+      var burnDates = (digest.burnPit && digest.burnPit.creditDates) || [];
+      var startsAt = (digest.starts && digest.starts[name]) || null;
+      for (var i = 0; i < series.length; i++) {
+        var isBurn = series[i] == null && burnDates.indexOf(dates[i]) !== -1 && !!startsAt && startsAt < dates[i];
+        points.push({ date: dates[i], gained: series[i], burn: isBurn });
+      }
+      return { points: points, start: startsAt };
     }).catch(function () {
       return dailySeriesForFallback(name);
     });
@@ -429,14 +442,23 @@
     return (n >= 0 ? "+" : "−") + s;
   }
   function renderChart(container, series, startDate) {
-    var pts = series.filter(function (s) { return s.gained != null; });
-    if (!pts.length) { container.innerHTML = '<p class="pchart-empty">Not enough history yet for a daily chart.</p>'; return; }
-    var max = Math.max.apply(null, pts.map(function (s) { return Math.abs(s.gained); })) || 1;
+    var pts = series.filter(function (s) { return s.gained != null || s.burn; });
+    if (!pts.some(function (s) { return s.gained != null; })) { container.innerHTML = '<p class="pchart-empty">Not enough history yet for a daily chart.</p>'; return; }
+    var max = Math.max.apply(null, pts.map(function (s) { return s.gained == null ? 0 : Math.abs(s.gained); })) || 1;
     var cols = pts.map(function (s, i) {
-      var h = Math.max(2, Math.round(Math.abs(s.gained) / max * 100));
       var d = new Date(s.date + "T00:00:00Z");
       var dayLabel = d.toLocaleDateString(undefined, { month: "numeric", day: "numeric", timeZone: "UTC" });
       var fullLabel = d.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+      if (s.gained == null) {
+        // The one-time Burn Pit payout landed inside this day's interval and can't be separated
+        // from the player's organic gain, so the day is marked instead of charted.
+        return '<div class="barcol" title="' + esc(fullLabel) + ': not charted — includes the one-time Burn Pit HC payout">'
+          + '<span class="barval">—</span>'
+          + '<div class="bartrack"><div class="bar burn"></div></div>'
+          + '<span class="barlabel">' + esc(dayLabel) + '</span>'
+          + '</div>';
+      }
+      var h = Math.max(2, Math.round(Math.abs(s.gained) / max * 100));
       // A skipped/missing date between two plotted days (e.g. the excluded 8/29) means this
       // bar's number actually spans more than one day — flag that in the tooltip so it isn't
       // read as a single day's gain. startDate covers the very first bar, whose "previous"
@@ -508,14 +530,14 @@
 
   function applyTiles(cur, prev, sinceLabel) {
     el("tlPot").textContent = usd(cur.pot);
-    el("tlHC").textContent = commaInt((cur.totalHC || 0) + BURN_PIT_HC);
+    el("tlHC").textContent = commaInt(burnIncl(cur.totalHC, cur.ts));
     el("tlHolders").textContent = commaInt(cur.holders || 0);
     el("tlPotD").textContent = ""; el("tlHCD").textContent = ""; el("tlHoldersD").textContent = ""; el("mvSince").textContent = "";
 
     if (prev) {
       var dPot = (cur.pot != null && prev.pot != null) ? cur.pot - prev.pot : null;
       if (dPot != null) { el("tlPotD").className = "d " + (dPot > 0 ? "up" : dPot < 0 ? "down" : ""); el("tlPotD").textContent = (dPot >= 0 ? "+" : "−") + usd(Math.abs(dPot)); }
-      var dHC = (cur.totalHC || 0) - (prev.totalHC || 0);
+      var dHC = burnIncl(cur.totalHC, cur.ts) - burnIncl(prev.totalHC, prev.ts);
       el("tlHCD").className = "d " + (dHC > 0 ? "up" : dHC < 0 ? "down" : ""); el("tlHCD").textContent = signed(dHC);
       var dH = (cur.holders || 0) - (prev.holders || 0);
       el("tlHoldersD").className = "d " + (dH > 0 ? "up" : dH < 0 ? "down" : ""); el("tlHoldersD").textContent = signed(dH);
@@ -572,7 +594,8 @@
     el("snapbar").hidden = false;
     el("snapMode").textContent = "live";
     el("snapText").innerHTML = "Pulled directly from gigaverse.io just now — " + commaInt(agg.holders) + " holders across " + agg.pages + " pages. Move and Hard Cores gained are vs the last daily snapshot"
-      + (baseline ? (" (<b>" + fmtET(baseline.ts) + "</b>)") : "") + "; 3-day avg is carried over unchanged from that snapshot.";
+      + (baseline ? (" (<b>" + fmtET(baseline.ts) + "</b>)") : "") + "; 3-day avg is carried over unchanged from that snapshot."
+      + (agg.baseSpansCredit ? " Hard Cores gained is blank until the next daily snapshot, because the one-time Burn Pit payout landed after that snapshot and would swamp it." : "");
 
     el("srcDot").className = "dot live";
     el("srcText").innerHTML = "<b>Live</b> · just now";
@@ -610,19 +633,20 @@
             if (dp.name) dailyByName[dp.name] = dp;
           }
         }
+        var baseSpansCredit = !!(DAILY_DATA && DAILY_DATA.current && preCredit(DAILY_DATA.current.ts));
         var players = entries.map(function (e, i) {
           var rank = i + 1, hc = +e.amount, name = e.username || "";
           var d = name ? dailyByName[name] : null;
           return {
             rank: rank, name: name, hc: hc,
-            hcDelta: d ? hc - d.hc : null,
+            hcDelta: (d && !baseSpansCredit) ? hc - d.hc : null,
             rankDelta: d ? d.rank - rank : null,
             avgPerDay: d ? d.avgPerDay : null,
             isNew: null
           };
         });
         var totalHC = players.reduce(function (s, p) { return s + p.hc; }, 0);
-        applyLive({ pot: potJson.prizePot.poolBalance / 100, totalHC: totalHC, holders: players.length, ts: new Date().toISOString(), players: players, pages: totalPages });
+        applyLive({ pot: potJson.prizePot.poolBalance / 100, totalHC: totalHC, holders: players.length, ts: new Date().toISOString(), players: players, pages: totalPages, baseSpansCredit: baseSpansCredit });
       });
     }).catch(function (e) {
       el("srcDot").className = "dot err";
