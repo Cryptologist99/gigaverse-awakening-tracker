@@ -64,15 +64,6 @@
 
   .wrap { max-width:1080px; margin:0 auto; padding:clamp(20px,4vw,48px); }
 
-  .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
-  .source { display:inline-flex; align-items:center; gap:9px; font-size:.82rem; color:var(--ink-soft);
-    background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 8px 6px 13px; box-shadow:var(--shadow); }
-  .dot { width:8px; height:8px; border-radius:50%; background:var(--gold); flex:none; }
-  .dot.err { background:var(--danger); }
-  #srcText b { color:var(--ink); font-weight:600; }
-  .countdown { font-size:.82rem; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;
-    background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 13px; box-shadow:var(--shadow); }
-  .countdown b { color:var(--gold); }
 
   header.masthead { margin-bottom:18px; }
   .eyebrow { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
@@ -169,14 +160,6 @@
 </nav>
 
 <div class="wrap">
-  <div class="topbar">
-    <div class="source">
-      <span class="dot" id="srcDot"></span>
-      <span id="srcText">Loading…</span>
-    </div>
-    <div class="countdown" id="countdown"><b>Event ended</b> · Oct 9, 18:00 UTC</div>
-  </div>
-
   <header class="masthead">
     <p class="eyebrow">Gigaverse · The Awakening</p>
     <h1>Awakening Leaderboard</h1>
@@ -506,20 +489,15 @@
     applyTiles(cur, prev, prev ? fmtET(prev.ts) : "—");
 
 
-    el("srcDot").className = "dot";
-    el("srcText").innerHTML = "Last snapshot <b>" + fmtET(cur.ts) + "</b>";
     el("boardTitle").innerHTML = '<span class="tt">' + esc(fmtET(cur.ts)) + '</span> snapshot';
     el("footNote").textContent = "gigaverse.io leaderboard id 8 · snapshot " + fmtET(cur.ts) + ".";
     render();
   }
 
   function loadDaily() {
-    el("srcText").innerHTML = "<b>Loading…</b>";
     return fetch(JSON_URL, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("json " + r.status); return r.json(); })
       .then(function (data) { applyDaily(data); })
       .catch(function () {
-        el("srcDot").className = "dot err";
-        el("srcText").innerHTML = "<b>Couldn't load the final standings</b>";
         el("tbody").innerHTML = '<tr><td class="empty" colspan="7">The final standings file couldn\'t be loaded. Try refreshing the page.</td></tr>';
       });
   }
