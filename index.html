@@ -81,12 +81,6 @@
   .lede { color:var(--ink-soft); max-width:64ch; margin:0; font-size:1rem; }
   .lede b { color:var(--ink); font-weight:600; }
 
-  .snapbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:16px 0 0; font-size:.82rem; color:var(--ink-soft);
-    background:color-mix(in oklab,var(--gold) 8%,var(--surface)); border:1px solid color-mix(in oklab,var(--gold) 26%,var(--line));
-    border-radius:10px; padding:9px 13px; }
-  .snapbar .tag { font-family:"IBM Plex Mono",monospace; font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; font-weight:600;
-    color:var(--gold); background:var(--gold-bg); border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:2px 8px; border-radius:999px; }
-  .snapbar b { color:var(--ink); font-weight:600; }
 
   .topline { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:18px 0 22px; }
   @media (max-width:680px) { .topline { grid-template-columns:repeat(2,1fr); } }
@@ -187,10 +181,6 @@
     <p class="eyebrow">Gigaverse · The Awakening</p>
     <h1>Awakening Leaderboard</h1>
     <p class="lede">Final standings — the last snapshot, taken at 1:59 PM ET on Oct 9, just before the event ended.</p>
-    <div class="snapbar" id="snapbar" hidden>
-      <span class="tag" id="snapMode">final</span>
-      <span id="snapText"></span>
-    </div>
   </header>
 
   <div class="topline">
@@ -237,7 +227,7 @@
   </div>
 
   <footer>
-    <span id="footNote">Final standings · gigaverse.io leaderboard id 8.</span>
+    <span id="footNote">gigaverse.io leaderboard id 8.</span>
     <span><a href="calculator.html">Estimate your payout →</a></span>
   </footer>
   <p class="tipline">Finding the tools here useful? <a href="tip.html">Send Cryptologist a tip</a>.</p>
@@ -515,13 +505,11 @@
 
     applyTiles(cur, prev, prev ? fmtET(prev.ts) : "—");
 
-    el("snapbar").hidden = false;
-    el("snapText").innerHTML = "Final standings as of the <b>" + fmtET(cur.ts) + "</b> snapshot · gains vs <b>" + (prev ? fmtET(prev.ts) : "—") + "</b>.";
 
     el("srcDot").className = "dot";
-    el("srcText").innerHTML = "Final standings · <b>" + fmtET(cur.ts) + "</b>";
-    el("boardTitle").innerHTML = '<span class="tt">Final</span> standings';
-    el("footNote").textContent = "Final standings · gigaverse.io leaderboard id 8 · snapshot " + fmtET(cur.ts) + ".";
+    el("srcText").innerHTML = "Last snapshot <b>" + fmtET(cur.ts) + "</b>";
+    el("boardTitle").innerHTML = '<span class="tt">' + esc(fmtET(cur.ts)) + '</span> snapshot';
+    el("footNote").textContent = "gigaverse.io leaderboard id 8 · snapshot " + fmtET(cur.ts) + ".";
     render();
   }
 
