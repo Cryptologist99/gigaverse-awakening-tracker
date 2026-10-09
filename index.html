@@ -70,16 +70,6 @@
   .dot { width:8px; height:8px; border-radius:50%; background:var(--gold); flex:none; }
   .dot.err { background:var(--danger); }
   #srcText b { color:var(--ink); font-weight:600; }
-  .refresh { font-family:"IBM Plex Mono",monospace; font-size:.76rem; background:var(--gold-bg); color:var(--gold);
-    border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:3px 10px; border-radius:999px; cursor:pointer; font-weight:500; }
-  .refresh:disabled { opacity:.55; cursor:default; }
-  .modetoggle { display:inline-flex; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:3px; gap:2px; box-shadow:var(--shadow); }
-  .mtbtn { font-family:"IBM Plex Mono",monospace; font-size:.76rem; font-weight:600; color:var(--ink-soft);
-    background:transparent; border:none; border-radius:999px; padding:6px 14px; cursor:pointer; transition:background .15s,color .15s; }
-  .mtbtn:hover { color:var(--ink); }
-  .mtbtn.active { background:var(--gold-bg); color:var(--gold); }
-  .mtbtn:disabled { opacity:.5; cursor:default; }
-  .dot.live { background:var(--live); }
   .countdown { font-size:.82rem; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;
     background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 13px; box-shadow:var(--shadow); }
   .countdown b { color:var(--gold); }
@@ -195,24 +185,24 @@
       <span class="dot" id="srcDot"></span>
       <span id="srcText">Loading…</span>
     </div>
-    <div class="countdown" id="countdown" hidden></div>
+    <div class="countdown" id="countdown"><b>Event ended</b> · Oct 9, 18:00 UTC</div>
   </div>
 
   <header class="masthead">
     <p class="eyebrow">Gigaverse · The Awakening</p>
     <h1>Awakening Leaderboard</h1>
-    <p class="lede">A daily snapshot taken at reset, not a live board.</p>
+    <p class="lede">Final standings — the last snapshot, taken at 1:59 PM ET on Oct 9, just before the event ended.</p>
     <div class="snapbar" id="snapbar" hidden>
-      <span class="tag" id="snapMode">daily</span>
+      <span class="tag" id="snapMode">final</span>
       <span id="snapText"></span>
     </div>
   </header>
 
   <div class="topline">
-    <div class="tl"><p class="k">Prize pot</p><p class="v gold" id="tlPot">—</p><p class="d" id="tlPotD"></p></div>
-    <div class="tl"><p class="k">Total Hard Cores <span class="burnpit-badge" title="Includes the 46,200,000 HC Burn Pit payout (154 items × a 300,000 HC pool each), credited to accounts after the Burn Pit closed on Oct 5 at 18:00 UTC. Snapshots taken before the credit have it added on top so totals line up; daily gains and averages exclude it.">incl. Burn Pit</span></p><p class="v" id="tlHC">—</p><p class="d" id="tlHCD"></p></div>
+    <div class="tl"><p class="k">Final prize pot</p><p class="v gold" id="tlPot">—</p><p class="d" id="tlPotD"></p></div>
+    <div class="tl"><p class="k">Final Hard Cores <span class="burnpit-badge" title="Includes the 46,200,000 HC Burn Pit payout (154 items × a 300,000 HC pool each), credited to accounts after the Burn Pit closed on Oct 5 at 18:00 UTC. Snapshots taken before the credit have it added on top so totals line up; daily gains and averages exclude it.">incl. Burn Pit</span></p><p class="v" id="tlHC">—</p><p class="d" id="tlHCD"></p></div>
     <div class="tl"><p class="k">Holders</p><p class="v" id="tlHolders">—</p><p class="d" id="tlHoldersD"></p></div>
-    <div class="tl"><p class="k">Event ends in</p><p class="v" id="tlEnds">—</p><p class="d">Oct 9, 18:00 UTC</p></div>
+    <div class="tl"><p class="k">Event</p><p class="v">Ended</p><p class="d">Oct 9, 18:00 UTC</p></div>
   </div>
   <p class="burnpit-note">Total Hard Cores includes the 46,200,000 HC Burn Pit payout, credited to accounts after it closed on Oct 5. Daily gains and 3-day averages exclude it.</p>
 
@@ -228,11 +218,6 @@
   </div>
   <div class="board-title-row">
     <h2 class="board-title" id="boardTitle">Leaderboard</h2>
-    <div class="modetoggle" role="tablist" aria-label="Data mode">
-      <button type="button" class="mtbtn active" id="modeDaily" data-mode="daily">Daily snapshot</button>
-      <button type="button" class="mtbtn" id="modeLive" data-mode="live">Live</button>
-    </div>
-    <button type="button" class="refresh" id="liveRefresh" hidden>↻ Refresh</button>
   </div>
   <p class="board-note" id="boardNote"></p>
   <p class="chart-hint">▸ Click on individual lines for daily graphs</p>
@@ -258,7 +243,7 @@
   </div>
 
   <footer>
-    <span id="footNote">Daily snapshot from this tracker's twice-daily job · gigaverse.io leaderboard id 8.</span>
+    <span id="footNote">Final standings · gigaverse.io leaderboard id 8.</span>
     <span><a href="calculator.html">Estimate your payout →</a></span>
   </footer>
   <p class="tipline">Finding the tools here useful? <a href="tip.html">Send Cryptologist a tip</a>.</p>
@@ -272,9 +257,6 @@
   var JSON_URL = "https://raw.githubusercontent.com/Cryptologist99/gigaverse-awakening-tracker/main/data/leaderboard_daily.json";
   var RAW_BASE = "https://raw.githubusercontent.com/Cryptologist99/gigaverse-awakening-tracker/main/";
   var HISTORY_CSV = RAW_BASE + "data/leaderboard_history.csv";
-  var API_POT = "https://gigaverse.io/api/itempools/public";
-  var API_LB  = "https://gigaverse.io/api/leaderboard/id/8";
-  var EVENT_END = Date.UTC(2026, 9, 9, 18, 0, 0) / 1000; // Oct 9 2026 18:00 UTC
   var DEFAULT_SHOW = 250;
   // Burn Pit payout: a fixed 46.2M HC (154 items x 300,000) credited to player accounts after the
   // Burn Pit closed on 2026-10-05 18:00 UTC. Snapshots taken before the credit don't contain it,
@@ -288,9 +270,7 @@
 
   var el = function (id) { return document.getElementById(id); };
   var STATE = { players: [] };
-  var DAILY_DATA = null; // last-loaded daily digest — used as the comparison baseline in live mode
-  var MODE = "daily";
-  var showAll = false, countdownTimer = null, liveLoading = false;
+  var showAll = false;
   var expanded = {}; // name -> true, rows with an open daily-history chart
   var historyPromise = null; // cached parse of leaderboard_history.csv, keyed by username
 
@@ -299,18 +279,6 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" })[c]; }); }
   function fmtET(iso) { var d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString(undefined, { timeZone:"America/New_York", month:"short", day:"numeric", hour:"numeric", minute:"2-digit" }) + " ET"; }
   function signed(n) { return (n >= 0 ? "+" : "−") + commaInt(Math.abs(n)); }
-
-  function startCountdown() {
-    if (countdownTimer) clearInterval(countdownTimer);
-    var tick = function () {
-      var left = Math.max(0, Math.floor(EVENT_END - Date.now() / 1000));
-      var d = Math.floor(left/86400), h = Math.floor((left%86400)/3600), m = Math.floor((left%3600)/60);
-      el("countdown").hidden = false;
-      el("countdown").innerHTML = left > 0 ? "Event ends in <b>" + d + "d " + h + "h " + m + "m</b>" : "<b>Event ended</b>";
-      el("tlEnds").textContent = left > 0 ? d + "d " + h + "h" : "ended";
-    };
-    tick(); countdownTimer = setInterval(tick, 30000);
-  }
 
   function moveCell(p) {
     if (p.isNew) return '<span class="mvcell new">● NEW</span>';
@@ -572,7 +540,6 @@
   }
 
   function applyDaily(data) {
-    DAILY_DATA = data;
     el("colDelta").textContent = "vs. previous day";
     STATE.players = data.players || [];
     computeMomentum(STATE.players);
@@ -580,17 +547,13 @@
 
     applyTiles(cur, prev, prev ? fmtET(prev.ts) : "—");
 
-    var provisional = data.mode !== "daily";
     el("snapbar").hidden = false;
-    el("snapMode").textContent = provisional ? "provisional" : "daily";
-    el("snapText").innerHTML = provisional
-      ? "Aligning to the 1:59 PM ET daily snapshot. For now, standings are <b>" + fmtET(cur.ts) + "</b> vs the earliest snapshot <b>" + (prev ? fmtET(prev.ts) : "—") + "</b>. Clean daily growth begins once two 1:59 PM snapshots exist."
-      : "Standings as of the <b>" + fmtET(cur.ts) + "</b> snapshot · daily growth vs <b>" + (prev ? fmtET(prev.ts) : "—") + "</b>.";
+    el("snapText").innerHTML = "Final standings as of the <b>" + fmtET(cur.ts) + "</b> snapshot · gains vs <b>" + (prev ? fmtET(prev.ts) : "—") + "</b>.";
 
     el("srcDot").className = "dot";
-    el("srcText").innerHTML = "Last snapshot <b>" + fmtET(cur.ts) + "</b>";
-    el("boardTitle").innerHTML = '<span class="tt">' + esc(fmtET(cur.ts)) + '</span> snapshot';
-    el("footNote").textContent = "Daily snapshot (not live) · gigaverse.io leaderboard id 8 · generated " + fmtET(data.generatedAt) + ".";
+    el("srcText").innerHTML = "Final standings · <b>" + fmtET(cur.ts) + "</b>";
+    el("boardTitle").innerHTML = '<span class="tt">Final</span> standings';
+    el("footNote").textContent = "Final standings · gigaverse.io leaderboard id 8 · snapshot " + fmtET(cur.ts) + ".";
     render();
   }
 
@@ -600,96 +563,9 @@
       .then(function (data) { applyDaily(data); })
       .catch(function () {
         el("srcDot").className = "dot err";
-        el("srcText").innerHTML = "<b>Couldn't load the daily snapshot</b>";
-        el("tbody").innerHTML = '<tr><td class="empty" colspan="8">The daily snapshot file isn\'t available yet. It\'s generated by the tracker\'s twice-daily job.</td></tr>';
+        el("srcText").innerHTML = "<b>Couldn't load the final standings</b>";
+        el("tbody").innerHTML = '<tr><td class="empty" colspan="8">The final standings file couldn\'t be loaded. Try refreshing the page.</td></tr>';
       });
-  }
-
-  // ---- Live mode: fetch straight from gigaverse.io (CORS-open), all ~28 pages. ----
-  // Move/gained/avg are joined back to the last daily digest by username (unique there,
-  // and the digest deliberately carries no wallets) — anon or brand-new-since-snapshot
-  // rows just don't have a match and show blanks like any other missing-history row.
-  function applyLive(agg) {
-    el("colDelta").textContent = "since snapshot";
-    STATE.players = agg.players;
-    computeMomentum(STATE.players);
-    var cur = { pot: agg.pot, totalHC: agg.totalHC, holders: agg.holders, ts: agg.ts };
-    var baseline = DAILY_DATA && DAILY_DATA.current ? DAILY_DATA.current : null;
-    applyTiles(cur, baseline, baseline ? (fmtET(baseline.ts) + " (last daily snapshot)") : "—");
-
-    el("snapbar").hidden = false;
-    el("snapMode").textContent = "live";
-    el("snapText").innerHTML = "Pulled directly from gigaverse.io just now — " + commaInt(agg.holders) + " holders across " + agg.pages + " pages. Move and Hard Cores gained are vs the last daily snapshot"
-      + (baseline ? (" (<b>" + fmtET(baseline.ts) + "</b>)") : "") + "; 3-day avg is carried over unchanged from that snapshot.";
-
-    el("srcDot").className = "dot live";
-    el("srcText").innerHTML = "<b>Live</b> · just now";
-    el("boardTitle").innerHTML = '<span class="tt">Live</span> standings';
-    el("footNote").textContent = "Live from gigaverse.io · leaderboard id 8 (Hard Cores) · " + commaInt(agg.holders) + " holders.";
-    render();
-  }
-
-  function loadLive() {
-    if (liveLoading) return Promise.resolve();
-    liveLoading = true;
-    el("liveRefresh").disabled = true;
-    el("srcText").innerHTML = "<b>Loading live data…</b>";
-    el("srcDot").className = "dot live";
-    var potP = fetch(API_POT, { headers: { "Accept": "application/json" } }).then(function (r) { if (!r.ok) throw new Error("pot " + r.status); return r.json(); });
-    var p1P = fetch(API_LB + "?page=1").then(function (r) { if (!r.ok) throw new Error("lb " + r.status); return r.json(); });
-    return Promise.all([potP, p1P]).then(function (res) {
-      var potJson = res[0], p1 = res[1];
-      var totalPages = (p1.pagination && p1.pagination.totalPages) || 1;
-      var pages = [Promise.resolve(p1)];
-      for (var pg = 2; pg <= totalPages; pg++) pages.push(fetch(API_LB + "?page=" + pg).then(function (r) { return r.ok ? r.json() : { leaderboard: [] }; }));
-      return Promise.all(pages).then(function (all) {
-        var entries = [];
-        for (var i = 0; i < all.length; i++) entries = entries.concat(all[i].leaderboard || []);
-        entries.sort(function (a, b) { return (+b.amount) - (+a.amount); });
-
-        // Join to the last daily snapshot by username (unique in the digest — no wallets
-        // in it by design, so this is the best available key) to show Move / gained-since /
-        // avg alongside live standings. Unmatched (anon, or genuinely new since the last
-        // snapshot) just get blanks, same as any other "no history yet" row.
-        var dailyByName = {};
-        if (DAILY_DATA && DAILY_DATA.players) {
-          for (var j = 0; j < DAILY_DATA.players.length; j++) {
-            var dp = DAILY_DATA.players[j];
-            if (dp.name) dailyByName[dp.name] = dp;
-          }
-        }
-        var players = entries.map(function (e, i) {
-          var rank = i + 1, hc = +e.amount, name = e.username || "";
-          var d = name ? dailyByName[name] : null;
-          return {
-            rank: rank, name: name, hc: hc,
-            hcDelta: d ? hc - d.hc : null,
-            rankDelta: d ? d.rank - rank : null,
-            avgPerDay: d ? d.avgPerDay : null,
-            isNew: null
-          };
-        });
-        var totalHC = players.reduce(function (s, p) { return s + p.hc; }, 0);
-        applyLive({ pot: potJson.prizePot.poolBalance / 100, totalHC: totalHC, holders: players.length, ts: new Date().toISOString(), players: players, pages: totalPages });
-      });
-    }).catch(function (e) {
-      el("srcDot").className = "dot err";
-      el("srcText").innerHTML = "<b>Live fetch failed</b> — " + esc(e.message) + ". Try again, or switch to Daily.";
-    }).then(function () { liveLoading = false; el("liveRefresh").disabled = false; });
-  }
-
-  function setMode(mode) {
-    if (mode === MODE) { if (mode === "live") loadLive(); return; }
-    MODE = mode;
-    el("modeDaily").classList.toggle("active", mode === "daily");
-    el("modeLive").classList.toggle("active", mode === "live");
-    el("liveRefresh").hidden = mode !== "live";
-    showAll = false;
-    if (mode === "daily") {
-      if (DAILY_DATA) applyDaily(DAILY_DATA); else loadDaily();
-    } else {
-      loadLive();
-    }
   }
 
   el("search").addEventListener("input", render);
@@ -701,10 +577,6 @@
     if (expanded[name]) delete expanded[name]; else expanded[name] = true;
     render();
   });
-  el("modeDaily").addEventListener("click", function () { setMode("daily"); });
-  el("modeLive").addEventListener("click", function () { setMode("live"); });
-  el("liveRefresh").addEventListener("click", function () { loadLive(); });
-  startCountdown();
   loadBurnPayouts();
   loadDaily();
 })();
