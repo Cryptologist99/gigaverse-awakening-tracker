@@ -92,8 +92,6 @@
   @media (max-width:680px) { .topline { grid-template-columns:repeat(2,1fr); } }
   .tl { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 17px; box-shadow:var(--shadow); }
   .tl .k { font-size:.74rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 7px; font-weight:600; }
-  .burnpit-badge { display:inline-block; font-size:.62rem; letter-spacing:0; text-transform:none; font-weight:600; color:var(--gold);
-    background:var(--gold-bg); border:1px solid color-mix(in oklab,var(--gold) 30%,transparent); padding:1px 6px; border-radius:999px; cursor:help; vertical-align:middle; margin-left:2px; }
   .burnpit-note { font-size:.78rem; color:var(--ink-faint); margin:-14px 0 20px; font-style:italic; }
   .tl .v { font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:0; line-height:1; }
   .tl .v.gold { color:var(--gold); }
@@ -139,9 +137,6 @@
   .avgd { font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink-faint); }
   .empty { padding:26px 14px; text-align:center; color:var(--ink-faint); }
 
-  .momcell { font-family:"IBM Plex Mono",monospace; font-size:.8rem; white-space:nowrap; }
-  .momcell .mup { color:var(--up); cursor:help; }
-  .momcell .mdown { color:var(--down); margin-left:7px; cursor:help; }
   tbody tr.playerrow { cursor:pointer; }
   tr.expand-row td { background:var(--surface-2); padding:16px 18px; }
   .pchart-wrap { position:sticky; left:18px; }
@@ -200,7 +195,7 @@
 
   <div class="topline">
     <div class="tl"><p class="k">Final prize pot</p><p class="v gold" id="tlPot">—</p><p class="d" id="tlPotD"></p></div>
-    <div class="tl"><p class="k">Final Hard Cores <span class="burnpit-badge" title="Includes the 46,200,000 HC Burn Pit payout (154 items × a 300,000 HC pool each), credited to accounts after the Burn Pit closed on Oct 5 at 18:00 UTC. Snapshots taken before the credit have it added on top so totals line up; daily gains and averages exclude it.">incl. Burn Pit</span></p><p class="v" id="tlHC">—</p><p class="d" id="tlHCD"></p></div>
+    <div class="tl"><p class="k">Final Hard Cores</p><p class="v" id="tlHC">—</p><p class="d" id="tlHCD"></p></div>
     <div class="tl"><p class="k">Holders</p><p class="v" id="tlHolders">—</p><p class="d" id="tlHoldersD"></p></div>
     <div class="tl"><p class="k">Event</p><p class="v">Ended</p><p class="d">Oct 9, 18:00 UTC</p></div>
   </div>
@@ -234,10 +229,9 @@
             <th class="num" id="colDelta">vs. previous day</th>
             <th class="num">3-day avg</th>
             <th class="num"><span class="th-tip" title="Approximate HC this player received from the Burn Pit payout (46.2M total, credited after it closed Oct 5 at 18:00 UTC). A static estimate from the live leaderboard at 19:49 UTC, about 1.8 hours after the close, minus an allowance for normal play in that window. Under 500 HC can't be told apart from normal play and shows —.">≈ Burn Pit</span></th>
-            <th class="num"><span class="th-tip" title="How many players ranked above you are averaging fewer HC/day than you (you're closing the gap), and how many ranked below you are averaging more (they're closing the gap on you). Click a row to see its daily HC history.">Momentum</span></th>
           </tr>
         </thead>
-        <tbody id="tbody"><tr><td class="empty" colspan="8">Loading leaderboard…</td></tr></tbody>
+        <tbody id="tbody"><tr><td class="empty" colspan="7">Loading leaderboard…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -308,30 +302,6 @@
     if (v == null) return '<span class="hcd same">—</span>';
     if (v === 0) return '<span class="avgd">0</span>';
     return '<span class="avgd">' + (v > 0 ? "+" : "−") + commaInt(Math.abs(v)) + '</span>';
-  }
-
-  // For each player, count how many ranked above have a lower avg/day (you're closing the
-  // gap on them) and how many ranked below have a higher avg/day (they're closing the gap
-  // on you). O(n^2) over the full roster (~5-6k players) — a few hundred ms, run once per
-  // data load, not per render/keystroke.
-  function computeMomentum(players) {
-    var n = players.length;
-    for (var i = 0; i < n; i++) {
-      var pi = players[i];
-      if (pi.avgPerDay == null) { pi.aboveSlower = null; pi.belowFaster = null; continue; }
-      var aboveSlower = 0, belowFaster = 0, j, a;
-      for (j = 0; j < i; j++) { a = players[j].avgPerDay; if (a != null && a < pi.avgPerDay) aboveSlower++; }
-      for (j = i + 1; j < n; j++) { a = players[j].avgPerDay; if (a != null && a > pi.avgPerDay) belowFaster++; }
-      pi.aboveSlower = aboveSlower;
-      pi.belowFaster = belowFaster;
-    }
-  }
-  function momentumCell(p) {
-    if (p.aboveSlower == null || p.belowFaster == null) return '<span class="avgd">—</span>';
-    return '<span class="momcell">'
-      + '<span class="mup" title="' + p.aboveSlower + ' of the players ranked above you are averaging fewer HC/day than you">▲' + p.aboveSlower + '</span>'
-      + '<span class="mdown" title="' + p.belowFaster + ' of the players ranked below you are averaging more HC/day than you">▼' + p.belowFaster + '</span>'
-      + '</span>';
   }
 
   // ---- Per-player daily HC chart ----
@@ -490,7 +460,7 @@
     var limit = (q || showAll) ? filtered.length : Math.min(DEFAULT_SHOW, filtered.length);
     var shown = filtered.slice(0, limit);
     var tb = el("tbody");
-    if (!shown.length) { tb.innerHTML = '<tr><td class="empty" colspan="8">No players match “' + esc(q) + '”.</td></tr>'; el("boardNote").innerHTML = ""; return; }
+    if (!shown.length) { tb.innerHTML = '<tr><td class="empty" colspan="7">No players match “' + esc(q) + '”.</td></tr>'; el("boardNote").innerHTML = ""; return; }
     var html = "";
     for (var i = 0; i < shown.length; i++) {
       var p = shown[i];
@@ -505,10 +475,9 @@
         + '<td class="num">' + deltaCell(p.hcDelta) + '</td>'
         + '<td class="num">' + avgCell(p.avgPerDay) + '</td>'
         + '<td class="num">' + burnCell(p) + '</td>'
-        + '<td class="num">' + momentumCell(p) + '</td>'
         + '</tr>';
       if (isOpen) {
-        html += '<tr class="expand-row"><td colspan="8"><div class="pchart-wrap" data-name="' + esc(p.name) + '"></div></td></tr>';
+        html += '<tr class="expand-row"><td colspan="7"><div class="pchart-wrap" data-name="' + esc(p.name) + '"></div></td></tr>';
       }
     }
     tb.innerHTML = html;
@@ -542,7 +511,6 @@
   function applyDaily(data) {
     el("colDelta").textContent = "vs. previous day";
     STATE.players = data.players || [];
-    computeMomentum(STATE.players);
     var cur = data.current || {}, prev = data.previous || null;
 
     applyTiles(cur, prev, prev ? fmtET(prev.ts) : "—");
@@ -564,7 +532,7 @@
       .catch(function () {
         el("srcDot").className = "dot err";
         el("srcText").innerHTML = "<b>Couldn't load the final standings</b>";
-        el("tbody").innerHTML = '<tr><td class="empty" colspan="8">The final standings file couldn\'t be loaded. Try refreshing the page.</td></tr>';
+        el("tbody").innerHTML = '<tr><td class="empty" colspan="7">The final standings file couldn\'t be loaded. Try refreshing the page.</td></tr>';
       });
   }
 
