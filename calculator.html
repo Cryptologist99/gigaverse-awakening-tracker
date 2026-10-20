@@ -102,6 +102,8 @@
     background:var(--surface-2); border:1.5px solid var(--line-strong); border-radius:10px; padding:12px 14px; transition:border-color .15s,box-shadow .15s; }
   input.has-prefix { padding-left:30px; }
   input[type="text"]:hover { border-color:var(--ink-faint); }
+  input[type="text"][readonly] { opacity:.7; cursor:not-allowed; background:var(--surface-2); }
+  input[type="text"][readonly]:hover, input[type="text"][readonly]:focus { border-color:var(--line-strong); box-shadow:none; }
   input[type="text"]:focus { outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in oklab,var(--focus) 28%,transparent); }
   .helper { margin-top:7px; font-size:.8rem; color:var(--ink-faint); display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
   .chip { font-family:"IBM Plex Mono",monospace; font-size:.76rem; background:var(--gold-bg); color:var(--gold);
@@ -198,8 +200,8 @@
       </div>
       <div class="field">
         <label for="boxCost">Minimum box cost <span class="unit">HC per box</span></label>
-        <div class="input-shell"><input type="text" id="boxCost" inputmode="numeric" value="1000" autocomplete="off" spellcheck="false"></div>
-        <div class="helper">Drives the whole pool: HC below a full box are wasted, so a higher cost wastes more.</div>
+        <div class="input-shell"><input type="text" id="boxCost" inputmode="numeric" value="10,000" readonly tabindex="-1" aria-readonly="true" autocomplete="off" spellcheck="false"></div>
+        <div class="helper">Fixed at 10,000 HC per box. HC below a full box are wasted.</div>
       </div>
       <div class="field">
         <label for="yourHC">Your Hard Cores <span class="unit">HC</span></label>
